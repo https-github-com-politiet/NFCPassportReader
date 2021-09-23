@@ -271,8 +271,50 @@ public class PACEHandler {
     
     func doPACEStep2IM( passportNonce: [UInt8] ) {
         // Not implemented yet
-        return handleError( "Step2IM", "IM not yet implemented" )
+        let pcdNonce: [UInt8]
+        do {
+            pcdNonce = try randb(numBytes: EVP_CIPHER_key_length(try get_cipher()))
+        } catch {
+            return self.handleError("Step2IM", "ERROR WHEN GENERATING RANDOM BYTES")
+        }
 
+        let mappingKey : OpaquePointer
+        do {
+            mappingKey = try self.paceInfo.createMappingKey( )
+        } catch {
+            return self.handleError( "Step2IM", "Error - \(error.localizedDescription)" )
+        }
+
+        let step2Data = wrapDO(b: 0x81, arr: pcdNonce)
+
+        tagReader.sendGeneralAuthenticate(data:step2Data, isLast:false, completed: { [weak self] response, error in
+            guard let sself = self else { return }
+
+            if let error = error {
+                return sself.handleError( "Step2IM", "Error - \(error)" )
+            }
+
+            // Convert to BIGNUM??
+
+            // Ephemeral params
+            let ephemeralParams : OpaquePointer
+            do {
+                //                if sself.agreementAlg == "DH" {
+                //                    Log.debug( "Doing DH Mapping agreement")
+                ////                    ephemeralParams = try sself.doDHMappingAgreement(mappingKey: mappingKey, passportPublicKeyData: piccMappingEncodedPublicKey, nonce: bn_nonce )
+                //                } else
+                if sself.agreementAlg == "ECDH" {
+                    Log.debug( "Doing ECDH IM Mapping agreement")
+                    ephemeralParams = try sself.doECDHIMMappingAgreement(mappingKey: mappingKey, piccNonce: passportNonce, pcdNonce: pcdNonce)
+                } else {
+                    return sself.handleError( "Step2IM", "Unsupport agreement algorithm" )
+                }
+            } catch {
+                return sself.handleError( "Step2IM", "Error - \(error.localizedDescription)" )
+            }
+
+            sself.doStep3KeyExchange(ephemeralParams: ephemeralParams)
+        })
     }
     
     /// Generates an ephemeral public/private key pair based on mapping parameters from step 2, and then sends
@@ -426,6 +468,259 @@ public class PACEHandler {
 // MARK - PACEHandler Utility functions
 @available(iOS 13, *)
 extension PACEHandler {
+    func get_cipher() throws -> OpaquePointer {
+        let cipher: OpaquePointer
+
+        if cipherAlg == "DESede" {
+            cipher = EVP_des_ede_cbc()
+        } else if cipherAlg == "AES" {
+            switch (keyLength) {
+            case 128:
+                cipher = EVP_aes_128_cbc()
+                break
+            case 192:
+                cipher = EVP_aes_192_cbc()
+                break
+            case 256:
+                cipher = EVP_aes_256_cbc()
+                break
+            default:
+                throw PACEHandlerError.ECDHKeyAgreementError("Unsupported key length when creating AES cipher: \(keyLength)")
+            }
+        } else {
+            throw PACEHandlerError.ECDHKeyAgreementError("Unsupported cipher algorithm: \(cipherAlg)")
+        }
+
+        return cipher
+    }
+
+    func cipher_no_pad(cipher: OpaquePointer, key_enc: [UInt8], data: [UInt8], enc: Int) throws -> [UInt8] {
+        guard let ctx = EVP_CIPHER_CTX_new() else {
+            throw PACEHandlerError.ECDHKeyAgreementError("Could not instantiate new cipher context")
+        }
+
+        let ivLength = EVP_CIPHER_iv_length(cipher)
+        var iv: [UInt8] = Array(repeating: 0, count: Int(ivLength))
+        guard RAND_bytes(&iv, ivLength) > 0 else {
+            throw PACEHandlerError.ECDHKeyAgreementError("Unable to generate iv")
+        }
+
+        guard EVP_CipherInit_ex(ctx, cipher, nil, key_enc, iv, 1) == 1,
+              EVP_CIPHER_CTX_set_padding(ctx, 0) == 1
+        else {
+            throw PACEHandlerError.ECDHKeyAgreementError("Unable to init cipher or set padding")
+        }
+
+        let out = try cipherFunc(ctx: ctx, cipher: cipher, key: key_enc, iv: iv, enc: enc, in: data)
+
+        return out
+    }
+
+    func randb(numBytes: Int32) throws -> [UInt8] {
+        var out: [UInt8] = Array(repeating: 0, count: Int(numBytes))
+        guard RAND_bytes(&out, numBytes) == 1 else {
+            print("ROOOOFL")
+            throw PACEHandlerError.ECDHKeyAgreementError("Could not generate random bytes")
+        }
+
+        print(out)
+        return out
+    }
+
+    func cipherFunc(ctx: OpaquePointer, cipher: OpaquePointer, key: [UInt8], iv: [UInt8], enc: Int, in data: [UInt8]) throws -> [UInt8] {
+        guard EVP_CIPHER_CTX_cipher(ctx) != nil else {
+            throw PACEHandlerError.ECDHKeyAgreementError("Could not do stuff")
+        }
+
+        let flags = EVP_CIPHER_flags(EVP_CIPHER_CTX_cipher(ctx))
+        var i: Int32
+        if flags == 1 && EVP_CIPH_NO_PADDING == 1 {
+            i = Int32(data.count)
+            guard i % EVP_CIPHER_block_size(cipher) == 0 else {
+                throw PACEHandlerError.ECDHKeyAgreementError("Data is not of blocklength")
+            }
+        } else {
+            i = Int32(data.count) + Int32(EVP_CIPHER_block_size(cipher))
+        }
+
+        var out = Array(repeating: UInt8(0), count: Int(i))
+
+        guard EVP_CipherUpdate(ctx, &out, &i, data, Int32(data.count)) == 1 else {
+            throw PACEHandlerError.ECDHKeyAgreementError("Could not do EVP_CipherUpdate")
+        }
+
+        out.append(contentsOf: Array(repeating: 0, count: Int(i)))
+
+        guard EVP_CipherFinal_ex(ctx, &out, &i) == 1 else {
+            throw PACEHandlerError.ECDHKeyAgreementError("Could not do EVP_CipherFinal_ex")
+        }
+
+        return out
+    }
+
+    func doECDHIMMappingAgreement(mappingKey: OpaquePointer, piccNonce: [UInt8], pcdNonce: [UInt8]) throws -> OpaquePointer {
+        guard let static_key = EVP_PKEY_get1_EC_KEY(mappingKey) else {
+            throw PACEHandlerError.ECDHKeyAgreementError("Unable to get ECDH mapping key")
+        }
+
+        // encrypt the nonce using the symmetric key in (= piccNonce / pcdNonce?) using no_padding
+
+//        guard let tmp_ctx = EVP_CIPHER_CTX_new() else {
+//            throw PACEHandlerError.ECDHKeyAgreementError("Unable to create new cipher context")
+//        }
+//
+//        let cipher: OpaquePointer
+//        if cipherAlg == "DESede" {
+//            cipher = EVP_des_ede_cbc()
+//        } else if cipherAlg == "AES" {
+//            switch (keyLength) {
+//            case 128:
+//                cipher = EVP_aes_128_cbc()
+//                break
+//            case 192:
+//                cipher = EVP_aes_192_cbc()
+//                break
+//            case 256:
+//                cipher = EVP_aes_256_cbc()
+//                break
+//            default:
+//                throw PACEHandlerError.ECDHKeyAgreementError("Unsupported key length when creating AES cipher: \(keyLength)")
+//            }
+//        } else {
+//            throw PACEHandlerError.ECDHKeyAgreementError("Unsupported cipher algorithm: \(cipherAlg)")
+//        }
+//
+//        let ivLength = EVP_CIPHER_iv_length(cipher)
+//        var iv: UInt8
+//        guard RAND_bytes(&iv, ivLength) > 0 else {
+//            throw PACEHandlerError.ECDHKeyAgreementError("Unable to generate iv")
+//        }
+//
+//        guard EVP_CipherInit_ex(tmp_ctx, cipher, nil, piccNonce, &iv, 1) == 1,
+//              EVP_CIPHER_CTX_set_padding(tmp_ctx, 0) == 1
+//        else {
+//            throw PACEHandlerError.ECDHKeyAgreementError("Unable to init cipher or set padding")
+//        }
+
+        let bn_ctx = BN_CTX_new()
+        BN_CTX_start(bn_ctx)
+
+        let a = BN_CTX_get(bn_ctx)
+        let b = BN_CTX_get(bn_ctx);
+        let p = BN_CTX_get(bn_ctx);
+        let x = BN_CTX_get(bn_ctx);
+        let y = BN_CTX_get(bn_ctx);
+        let v = BN_CTX_get(bn_ctx);
+        let two = BN_CTX_get(bn_ctx);
+        let three = BN_CTX_get(bn_ctx);
+        let four = BN_CTX_get(bn_ctx);
+        let six = BN_CTX_get(bn_ctx);
+        let twentyseven = BN_CTX_get(bn_ctx);
+        let tmp = BN_CTX_get(bn_ctx);
+        let tmp2 = BN_CTX_get(bn_ctx);
+        let bn_inv = BN_CTX_get(bn_ctx);
+
+        // TODO
+        // Encrypt the Nonce using the symmetric key in
+        // x_mem = cipher_no_pad(ctx->ka_ctx, NULL, in, s, 1);
+        let cipher = try get_cipher()
+        let x_mem = try cipher_no_pad(cipher: cipher, key_enc: pcdNonce, data: piccNonce, enc: 1)
+
+        guard EC_GROUP_get_curve_GFp(EC_KEY_get0_group(static_key), p, a, b, bn_ctx) == 1 else {
+            throw PACEHandlerError.ECDHKeyAgreementError("Unable to get EC group curve")
+        }
+
+        // Assign constants
+        guard BN_set_word(two, 2) == 1,
+              BN_set_word(three, 3) == 1,
+              BN_set_word(four, 4) == 1,
+              BN_set_word(six, 6) == 1,
+              BN_set_word(twentyseven, 27) == 1
+        else {
+            throw PACEHandlerError.ECDHKeyAgreementError("Unable to set BIGNUM words")
+        }
+
+        // Check prerequisites for curve parameters
+        guard
+            // p > 3
+            BN_cmp(p, three) == 1,
+            // p mod 3 = 2; (p has the form p=q^n, q prime)
+            BN_nnmod(tmp, p, three, bn_ctx) == 1,
+            BN_cmp(tmp, two) == 0
+        else {
+            throw PACEHandlerError.ECDHKeyAgreementError("Unsuited curve")
+        }
+
+        // Convert encrypted nonce to BIGNUM
+        // TODO
+        let u = BN_bin2bn(x_mem, Int32(x_mem.count), nil)
+
+        guard
+            // v = (3a - u^4) / 6u mod p
+            BN_mod_mul(tmp, three, a, p, bn_ctx) == 1,
+            BN_mod_exp(tmp2, u, four, p, bn_ctx) == 1,
+            BN_mod_sub(v, tmp, tmp2, p, bn_ctx) == 1,
+            BN_mod_mul(tmp, u, six, p, bn_ctx) == 1,
+
+            // For division within a galois field we need to compute
+            // the multiplicative inverse of a number
+            BN_mod_inverse(bn_inv, tmp, p, bn_ctx) != nil,
+            BN_mod_mul(v, v, bn_inv, p, bn_ctx) == 1,
+
+            // x = (v^2 - b - ((u^6)/27))
+            BN_mod_sqr(tmp, v, p, bn_ctx) == 1,
+            BN_mod_sub(tmp2, tmp, b, p, bn_ctx) == 1,
+            BN_mod_exp(tmp, u, six, p, bn_ctx) == 1,
+            BN_mod_inverse(bn_inv, twentyseven, p, bn_ctx) != nil,
+            BN_mod_mul(tmp, tmp, bn_inv, p, bn_ctx) == 1,
+            BN_mod_sub(x, tmp2, tmp, p, bn_ctx) == 1,
+
+            // x -> x^(1/3) = x^((2p^n -1)/3)
+            BN_mul(tmp, two, p, bn_ctx) == 1,
+            BN_sub(tmp, tmp, BN_value_one()) == 1,
+
+            // Division is defined, because p^n = 2 mod 3
+            BN_div(tmp, y, tmp, three, bn_ctx) == 1,
+            BN_mod_exp(tmp2, x, tmp, p, bn_ctx) == 1,
+            BN_copy(x, tmp2) != nil,
+
+            // x += (u^2)/3
+            BN_mod_sqr(tmp, u, p, bn_ctx) == 1,
+            BN_mod_inverse(bn_inv, three, p, bn_ctx) != nil,
+            BN_mod_mul(tmp2, tmp, bn_inv, p, bn_ctx) == 1,
+            BN_mod_add(tmp, x, tmp2, p, bn_ctx) == 1,
+            BN_copy(x, tmp) != nil,
+
+            // y = ux + v
+            BN_mod_mul(y, u, x, p, bn_ctx) == 1,
+            BN_mod_add(tmp, y, v, p, bn_ctx) == 1,
+            BN_copy(y, tmp) != nil
+        else {
+            throw PACEHandlerError.ECDHKeyAgreementError("Could not do super complex calculation")
+        }
+
+        guard let ephemeralParams = EVP_PKEY_new() else {
+            throw PACEHandlerError.ECDHKeyAgreementError("Unable to create ephemeral params")
+        }
+
+        let ephemeral_key = EC_KEY_dup(static_key)
+        defer { EC_KEY_free(ephemeral_key) }
+
+        guard EVP_PKEY_set1_EC_KEY(ephemeralParams, ephemeral_key) == 1 else {
+            throw PACEHandlerError.ECDHKeyAgreementError("Unable to configure new EC_KEY")
+        }
+
+        guard let g = EC_POINT_new(EC_KEY_get0_group(ephemeral_key)) else {
+            throw PACEHandlerError.ECDHKeyAgreementError("Unable to get point g")
+        }
+
+        guard EC_POINT_set_affine_coordinates(EC_KEY_get0_group(ephemeral_key), g, x, y, bn_ctx) == 1 else {
+            throw PACEHandlerError.ECDHKeyAgreementError("Unable to set affine coordinates")
+        }
+
+        return ephemeralParams
+
+    }
     
     /// Does the DH key Mapping agreement
     /// - Parameter mappingKey - Pointer to an EVP_PKEY structure containing the mapping key
