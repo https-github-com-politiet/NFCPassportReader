@@ -294,8 +294,6 @@ public class PACEHandler {
                 return sself.handleError( "Step2IM", "Error - \(error)" )
             }
 
-            // Convert to BIGNUM??
-
             // Ephemeral params
             let ephemeralParams : OpaquePointer
             do {
@@ -499,7 +497,8 @@ extension PACEHandler {
             throw PACEHandlerError.ECDHKeyAgreementError("Could not instantiate new cipher context")
         }
 
-        let ivLength = EVP_CIPHER_iv_length(cipher)
+//        let ivLength = EVP_CIPHER_iv_length(cipher)
+        let ivLength = EVP_CIPHER_block_size(cipher)
         var iv: [UInt8] = Array(repeating: 0, count: Int(ivLength))
         guard RAND_bytes(&iv, ivLength) > 0 else {
             throw PACEHandlerError.ECDHKeyAgreementError("Unable to generate iv")
@@ -563,45 +562,6 @@ extension PACEHandler {
             throw PACEHandlerError.ECDHKeyAgreementError("Unable to get ECDH mapping key")
         }
 
-        // encrypt the nonce using the symmetric key in (= piccNonce / pcdNonce?) using no_padding
-
-//        guard let tmp_ctx = EVP_CIPHER_CTX_new() else {
-//            throw PACEHandlerError.ECDHKeyAgreementError("Unable to create new cipher context")
-//        }
-//
-//        let cipher: OpaquePointer
-//        if cipherAlg == "DESede" {
-//            cipher = EVP_des_ede_cbc()
-//        } else if cipherAlg == "AES" {
-//            switch (keyLength) {
-//            case 128:
-//                cipher = EVP_aes_128_cbc()
-//                break
-//            case 192:
-//                cipher = EVP_aes_192_cbc()
-//                break
-//            case 256:
-//                cipher = EVP_aes_256_cbc()
-//                break
-//            default:
-//                throw PACEHandlerError.ECDHKeyAgreementError("Unsupported key length when creating AES cipher: \(keyLength)")
-//            }
-//        } else {
-//            throw PACEHandlerError.ECDHKeyAgreementError("Unsupported cipher algorithm: \(cipherAlg)")
-//        }
-//
-//        let ivLength = EVP_CIPHER_iv_length(cipher)
-//        var iv: UInt8
-//        guard RAND_bytes(&iv, ivLength) > 0 else {
-//            throw PACEHandlerError.ECDHKeyAgreementError("Unable to generate iv")
-//        }
-//
-//        guard EVP_CipherInit_ex(tmp_ctx, cipher, nil, piccNonce, &iv, 1) == 1,
-//              EVP_CIPHER_CTX_set_padding(tmp_ctx, 0) == 1
-//        else {
-//            throw PACEHandlerError.ECDHKeyAgreementError("Unable to init cipher or set padding")
-//        }
-
         let bn_ctx = BN_CTX_new()
         BN_CTX_start(bn_ctx)
 
@@ -623,8 +583,11 @@ extension PACEHandler {
         // TODO
         // Encrypt the Nonce using the symmetric key in
         // x_mem = cipher_no_pad(ctx->ka_ctx, NULL, in, s, 1);
-        let cipher = try get_cipher()
-        let x_mem = try cipher_no_pad(cipher: cipher, key_enc: pcdNonce, data: piccNonce, enc: 1)
+//        let cipher = try get_cipher()
+//        let x_mem = try cipher_no_pad(cipher: cipher, key_enc: pcdNonce, data: piccNonce, enc: 1)
+
+        let iv = [UInt8](repeating: 0, count: 16)
+        let x_mem = AESEncrypt(key: pcdNonce, message: piccNonce, iv: iv)
 
         guard EC_GROUP_get_curve_GFp(EC_KEY_get0_group(static_key), p, a, b, bn_ctx) == 1 else {
             throw PACEHandlerError.ECDHKeyAgreementError("Unable to get EC group curve")
@@ -655,6 +618,7 @@ extension PACEHandler {
         // TODO
         let u = BN_bin2bn(x_mem, Int32(x_mem.count), nil)
 
+        // icart point encoding
         guard
             // v = (3a - u^4) / 6u mod p
             BN_mod_mul(tmp, three, a, p, bn_ctx) == 1,
