@@ -8,6 +8,7 @@
 import Foundation
 import OpenSSL
 import CryptoTokenKit
+import CommonCrypto
 
 #if !os(macOS)
 import CoreNFC
@@ -273,14 +274,14 @@ public class PACEHandler {
         // Not implemented yet
         let pcdNonce: [UInt8]
         do {
-            pcdNonce = try randb(numBytes: EVP_CIPHER_key_length(try get_cipher()))
+            pcdNonce = try randb(numBytes: Int32(passportNonce.count))
         } catch {
             return self.handleError("Step2IM", "ERROR WHEN GENERATING RANDOM BYTES")
         }
 
         let mappingKey : OpaquePointer
         do {
-            mappingKey = try self.paceInfo.createMappingKey( )
+            mappingKey = try self.paceInfo.createMappingKey()
         } catch {
             return self.handleError( "Step2IM", "Error - \(error.localizedDescription)" )
         }
@@ -466,95 +467,62 @@ public class PACEHandler {
 // MARK - PACEHandler Utility functions
 @available(iOS 13, *)
 extension PACEHandler {
-    func get_cipher() throws -> OpaquePointer {
-        let cipher: OpaquePointer
-
-        if cipherAlg == "DESede" {
-            cipher = EVP_des_ede_cbc()
-        } else if cipherAlg == "AES" {
-            switch (keyLength) {
-            case 128:
-                cipher = EVP_aes_128_cbc()
-                break
-            case 192:
-                cipher = EVP_aes_192_cbc()
-                break
-            case 256:
-                cipher = EVP_aes_256_cbc()
-                break
-            default:
-                throw PACEHandlerError.ECDHKeyAgreementError("Unsupported key length when creating AES cipher: \(keyLength)")
-            }
-        } else {
-            throw PACEHandlerError.ECDHKeyAgreementError("Unsupported cipher algorithm: \(cipherAlg)")
-        }
-
-        return cipher
-    }
-
-    func cipher_no_pad(cipher: OpaquePointer, key_enc: [UInt8], data: [UInt8], enc: Int) throws -> [UInt8] {
-        guard let ctx = EVP_CIPHER_CTX_new() else {
-            throw PACEHandlerError.ECDHKeyAgreementError("Could not instantiate new cipher context")
-        }
-
-//        let ivLength = EVP_CIPHER_iv_length(cipher)
-        let ivLength = EVP_CIPHER_block_size(cipher)
-        var iv: [UInt8] = Array(repeating: 0, count: Int(ivLength))
-        guard RAND_bytes(&iv, ivLength) > 0 else {
-            throw PACEHandlerError.ECDHKeyAgreementError("Unable to generate iv")
-        }
-
-        guard EVP_CipherInit_ex(ctx, cipher, nil, key_enc, iv, 1) == 1,
-              EVP_CIPHER_CTX_set_padding(ctx, 0) == 1
-        else {
-            throw PACEHandlerError.ECDHKeyAgreementError("Unable to init cipher or set padding")
-        }
-
-        let out = try cipherFunc(ctx: ctx, cipher: cipher, key: key_enc, iv: iv, enc: enc, in: data)
-
-        return out
-    }
-
     func randb(numBytes: Int32) throws -> [UInt8] {
         var out: [UInt8] = Array(repeating: 0, count: Int(numBytes))
         guard RAND_bytes(&out, numBytes) == 1 else {
-            print("ROOOOFL")
             throw PACEHandlerError.ECDHKeyAgreementError("Could not generate random bytes")
         }
 
-        print(out)
         return out
     }
 
-    func cipherFunc(ctx: OpaquePointer, cipher: OpaquePointer, key: [UInt8], iv: [UInt8], enc: Int, in data: [UInt8]) throws -> [UInt8] {
-        guard EVP_CIPHER_CTX_cipher(ctx) != nil else {
-            throw PACEHandlerError.ECDHKeyAgreementError("Could not do stuff")
+    func pseudoRandomFunction(piccNonce: [UInt8], pcdNonce: [UInt8], p: OpaquePointer) -> [UInt8] {
+        let l = piccNonce.count * 8
+        let k = pcdNonce.count * 8
+
+        let C0_LENGTH_128: [UInt8] = [
+            0xA6, 0x68, 0x89, 0x2A, 0x7C, 0x41, 0xE3, 0xCA, 0x73, 0x9F, 0x40, 0xB0, 0x57, 0xD8, 0x59, 0x04
+        ]
+        let C1_LENGTH_128: [UInt8] = [
+            0xA4, 0xE1, 0x36, 0xAC, 0x72, 0x5F, 0x73, 0x8B, 0x01, 0xC1, 0xF6, 0x02, 0x17, 0xC1, 0x88, 0xAD
+        ]
+        let C0_LENGTH_256: [UInt8] = [
+            0xD4, 0x63, 0xD6, 0x52, 0x34, 0x12, 0x4E, 0xF7, 0x89, 0x70, 0x54, 0x98, 0x6D, 0xCA, 0x0A, 0x17,
+            0x4E, 0x28, 0xDF, 0x75, 0x8C, 0xBA, 0xA0, 0x3F, 0x24, 0x06, 0x16, 0x41, 0x4D, 0x5A, 0x16, 0x76
+        ]
+        let C1_LENGTH_256: [UInt8] = [
+            0x54, 0xBD, 0x72, 0x55, 0xF0, 0xAA, 0xF8, 0x31, 0xBE, 0xC3, 0x42, 0x3F, 0xCF, 0x39, 0xD6, 0x9B,
+            0x6C, 0xBF, 0x06, 0x66, 0x77, 0xD0, 0xFA, 0xAE, 0x5A, 0xAD, 0xD9, 0x9D, 0xF8, 0xE5, 0x35, 0x17
+        ]
+
+        var c0: [UInt8] = []
+        var c1: [UInt8] = []
+        switch l {
+        case 128:
+            c0 = C0_LENGTH_128
+            c1 = C1_LENGTH_128
+        case 192, 256:
+            c0 = C0_LENGTH_256
+            c1 = C1_LENGTH_256
+        default:
+            fatalError("Unsupported length in pseudoRandomFunction: \(l)")
         }
 
-        let flags = EVP_CIPHER_flags(EVP_CIPHER_CTX_cipher(ctx))
-        var i: Int32
-        if flags == 1 && EVP_CIPH_NO_PADDING == 1 {
-            i = Int32(data.count)
-            guard i % EVP_CIPHER_block_size(cipher) == 0 else {
-                throw PACEHandlerError.ECDHKeyAgreementError("Data is not of blocklength")
-            }
-        } else {
-            i = Int32(data.count) + Int32(EVP_CIPHER_block_size(cipher))
+        // Hardcorded AES encryption at the moment because our PACE-IM passports
+        // only support AES
+        let iv = [UInt8](repeating: 0, count: kCCBlockSizeAES128)
+        var key = AESEncrypt(key: piccNonce, message: pcdNonce, iv: iv)
+
+        var x: [UInt8] = []
+        var n = 0
+        while n * l < BN_num_bits(p) + 64 {
+            key = AESEncrypt(key: key, message: c0, iv: iv)
+            x += AESEncrypt(key: key, message: c1, iv: iv)
+            n += 1
         }
 
-        var out = Array(repeating: UInt8(0), count: Int(i))
-
-        guard EVP_CipherUpdate(ctx, &out, &i, data, Int32(data.count)) == 1 else {
-            throw PACEHandlerError.ECDHKeyAgreementError("Could not do EVP_CipherUpdate")
-        }
-
-        out.append(contentsOf: Array(repeating: 0, count: Int(i)))
-
-        guard EVP_CipherFinal_ex(ctx, &out, &i) == 1 else {
-            throw PACEHandlerError.ECDHKeyAgreementError("Could not do EVP_CipherFinal_ex")
-        }
-
-        return out
+        // should do .mod(p) according to jMRTD
+        return x
     }
 
     func doECDHIMMappingAgreement(mappingKey: OpaquePointer, piccNonce: [UInt8], pcdNonce: [UInt8]) throws -> OpaquePointer {
@@ -580,14 +548,10 @@ extension PACEHandler {
         let tmp2 = BN_CTX_get(bn_ctx);
         let bn_inv = BN_CTX_get(bn_ctx);
 
-        // TODO
-        // Encrypt the Nonce using the symmetric key in
-        // x_mem = cipher_no_pad(ctx->ka_ctx, NULL, in, s, 1);
-//        let cipher = try get_cipher()
-//        let x_mem = try cipher_no_pad(cipher: cipher, key_enc: pcdNonce, data: piccNonce, enc: 1)
+        // Encrypt the nonce using the symmetric key in (TODO: DES encryption)
+        let iv = [UInt8](repeating: 0, count: kCCBlockSizeAES128)
+        var x_mem = AESEncrypt(key: piccNonce, message: pcdNonce, iv: iv)
 
-        let iv = [UInt8](repeating: 0, count: 16)
-        let x_mem = AESEncrypt(key: pcdNonce, message: piccNonce, iv: iv)
 
         guard EC_GROUP_get_curve_GFp(EC_KEY_get0_group(static_key), p, a, b, bn_ctx) == 1 else {
             throw PACEHandlerError.ECDHKeyAgreementError("Unable to get EC group curve")
@@ -614,9 +578,12 @@ extension PACEHandler {
             throw PACEHandlerError.ECDHKeyAgreementError("Unsuited curve")
         }
 
+        x_mem = pseudoRandomFunction(piccNonce: x_mem, pcdNonce: pcdNonce, p: p!)
+
         // Convert encrypted nonce to BIGNUM
-        // TODO
-        let u = BN_bin2bn(x_mem, Int32(x_mem.count), nil)
+        guard let u = BN_bin2bn(x_mem, Int32(x_mem.count), nil) else {
+            throw PACEHandlerError.ECDHKeyAgreementError("Could not convert encrypted nonce to BIGNUM")
+        }
 
         // icart point encoding
         guard
