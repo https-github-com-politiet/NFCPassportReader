@@ -8,6 +8,8 @@
 
 /* Begin PBXBuildFile section */
 		28BAEE044BE68A5986B97866 /* Pods_NFCPassportReaderApp.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A7BD003B33886ED0F3F03325 /* Pods_NFCPassportReaderApp.framework */; };
+		322525BB2704C8F80027701E /* PACEInfoTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 322525BA2704C8F80027701E /* PACEInfoTests.swift */; };
+		322525BD2704C9970027701E /* ActiveAuthenticationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 322525BC2704C9970027701E /* ActiveAuthenticationTests.swift */; };
 		8C4EEF9CDD6DAFEF26F8909A /* Pods_NFCPassportReaderAppTests.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = DA39DA603B1A7EBD8FC38112 /* Pods_NFCPassportReaderAppTests.framework */; };
 		A1298C9F25D53A5C00F5713E /* ViewExt.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1298C9E25D53A5C00F5713E /* ViewExt.swift */; };
 		A1614B9225D5856600191749 /* ExportPassportView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1614B9125D5856600191749 /* ExportPassportView.swift */; };
@@ -49,6 +51,8 @@
 
 /* Begin PBXFileReference section */
 		29684A8780D423313153D8B6 /* Pods-NFCPassportReaderAppTests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-NFCPassportReaderAppTests.release.xcconfig"; path = "Target Support Files/Pods-NFCPassportReaderAppTests/Pods-NFCPassportReaderAppTests.release.xcconfig"; sourceTree = "<group>"; };
+		322525BA2704C8F80027701E /* PACEInfoTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PACEInfoTests.swift; sourceTree = "<group>"; };
+		322525BC2704C9970027701E /* ActiveAuthenticationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActiveAuthenticationTests.swift; sourceTree = "<group>"; };
 		3B684038F7C81C32BA310074 /* Pods-NFCPassportReaderAppTests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-NFCPassportReaderAppTests.debug.xcconfig"; path = "Target Support Files/Pods-NFCPassportReaderAppTests/Pods-NFCPassportReaderAppTests.debug.xcconfig"; sourceTree = "<group>"; };
 		574315DEF74ED0B9CC6A8DC7 /* Pods-NFCPassportReaderApp.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-NFCPassportReaderApp.debug.xcconfig"; path = "Target Support Files/Pods-NFCPassportReaderApp/Pods-NFCPassportReaderApp.debug.xcconfig"; sourceTree = "<group>"; };
 		A1095E982588FBB100D2A46A /* CHANGELOG */ = {isa = PBXFileReference; lastKnownFileType = text; name = CHANGELOG; path = ../../CHANGELOG; sourceTree = "<group>"; };
@@ -212,6 +216,8 @@
 				A1EBC5222370BAB2004DD19E /* NFCPassportReaderTests.swift */,
 				A1EBC5112370B88D004DD19E /* Info.plist */,
 				A17375F425F78B0C005995DA /* PACETests.swift */,
+				322525BA2704C8F80027701E /* PACEInfoTests.swift */,
+				322525BC2704C9970027701E /* ActiveAuthenticationTests.swift */,
 			);
 			path = NFCPassportReaderAppTests;
 			sourceTree = "<group>";
@@ -423,7 +429,9 @@
 			buildActionMask = 2147483647;
 			files = (
 				A1EBC5252370BAB2004DD19E /* NFCPassportReaderTests.swift in Sources */,
+				322525BD2704C9970027701E /* ActiveAuthenticationTests.swift in Sources */,
 				A17375F525F78B0D005995DA /* PACETests.swift in Sources */,
+				322525BB2704C8F80027701E /* PACEInfoTests.swift in Sources */,
 				A1EBC5242370BAB2004DD19E /* DataGroupParsingTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
