@@ -362,7 +362,7 @@ public class PACEInfo : SecurityInfo {
             return "id-PACE-DH-IM-AES-CBC-CMAC-192"
         }
         if ID_PACE_DH_IM_AES_CBC_CMAC_256 == oid {
-            return "id-PACE_DH-IM-AES-CBC-CMAC-256"
+            return "id-PACE-DH-IM-AES-CBC-CMAC-256"
         }
         if ID_PACE_ECDH_GM_3DES_CBC_CBC == oid {
             return "id-PACE-ECDH-GM-3DES-CBC-CBC"
@@ -377,7 +377,7 @@ public class PACEInfo : SecurityInfo {
             return "id-PACE-ECDH-GM-AES-CBC-CMAC-256"
         }
         if ID_PACE_ECDH_IM_3DES_CBC_CBC == oid {
-            return "id-PACE-ECDH-IM_3DES-CBC-CBC"
+            return "id-PACE-ECDH-IM-3DES-CBC-CBC"
         }
         if ID_PACE_ECDH_IM_AES_CBC_CMAC_128 == oid {
             return "id-PACE-ECDH-IM-AES-CBC-CMAC-128"
