@@ -190,6 +190,12 @@ public class BACHandler {
         let response = tripleDESDecrypt(key: self.ksenc, message: [UInt8](data[0..<32]), iv: [0,0,0,0,0,0,0,0] )
 
         let response_kicc = [UInt8](response[16..<32])
+        let responce_kifd = [UInt8](response[8..<16])
+        
+        guard responce_kifd == self.rnd_ifd else {
+            throw NFCPassportReaderError.InvalidResponse
+        }
+        
         let Kseed = xor(self.kifd, response_kicc)
         Log.verbose("Calculate XOR of Kifd and Kicc")
         Log.verbose("\tKseed: \(binToHexRep(Kseed))" )

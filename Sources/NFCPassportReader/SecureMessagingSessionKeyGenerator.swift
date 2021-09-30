@@ -76,7 +76,8 @@ class SecureMessagingSessionKeyGenerator {
             switch(keyLength) {
                 case 112, 128:
                     // Copy E (Octects 1 to 8), D (Octects 9 to 16), E (again Octects 1 to 8), 112-bit 3DES key
-                    keyBytes = [UInt8](hashResult[0..<16] + hashResult[0..<8])
+                    // Not sure why E is added again here, it will be added again in Secure Messaging to form triple DES keys
+                    keyBytes = [UInt8](hashResult[0..<16]) //+ hashResult[0..<8])
                     break;
                 default:
                     throw NFCPassportReaderError.InvalidDataPassed("Can only use DESede with 128-but key length")
