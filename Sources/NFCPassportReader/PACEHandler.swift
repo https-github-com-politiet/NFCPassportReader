@@ -298,11 +298,10 @@ public class PACEHandler {
             // Ephemeral params
             let ephemeralParams : OpaquePointer
             do {
-                //                if sself.agreementAlg == "DH" {
-                //                    Log.debug( "Doing DH Mapping agreement")
-                ////                    ephemeralParams = try sself.doDHMappingAgreement(mappingKey: mappingKey, passportPublicKeyData: piccMappingEncodedPublicKey, nonce: bn_nonce )
-                //                } else
-                if sself.agreementAlg == "ECDH" {
+                if sself.agreementAlg == "DH" {
+                    Log.debug( "Doing DH Mapping agreement")
+                    ephemeralParams = try sself.doDHIMMappingAgreement(mappingKey: mappingKey, piccNonce: passportNonce, pcdNonce: pcdNonce)
+                } else if sself.agreementAlg == "ECDH" {
                     Log.debug( "Doing ECDH IM Mapping agreement")
                     ephemeralParams = try sself.doECDHIMMappingAgreement(mappingKey: mappingKey, piccNonce: passportNonce, pcdNonce: pcdNonce)
                 } else {
@@ -724,6 +723,74 @@ extension PACEHandler {
         return ephemeralParams
     }
     
+    /// Does the IM DH key Mapping agreement
+    /// - Parameter mappingKey - Pointer to an EVP_PKEY structure containing the mapping key
+    /// - Parameter passportPublicKeyData - byte array containing the publick key read from the passport
+    /// - Parameter nonce - Pointer to an BIGNUM structure containing the unencrypted nonce
+    /// - Returns the EVP_PKEY containing the mapped ephemeral parameters
+    func doDHIMMappingAgreement( mappingKey : OpaquePointer, piccNonce: [UInt8], pcdNonce: [UInt8] ) throws -> OpaquePointer {
+        guard let static_key = EVP_PKEY_get1_EC_KEY(mappingKey) else {
+            throw PACEHandlerError.ECDHKeyAgreementError("Unable to get ECDH mapping key")
+        }
+        
+        let bn_ctx = BN_CTX_new()
+        BN_CTX_start(bn_ctx)
+        let a = BN_CTX_get(bn_ctx)
+        var p = BN_CTX_get(bn_ctx)
+        let q = DH_get0_q(static_key)
+        var g = BN_CTX_get(bn_ctx)
+        
+        guard let dh_mapping_key = EVP_PKEY_get1_DH(mappingKey) else {
+            // Error
+            throw PACEHandlerError.DHKeyAgreementError( "Unable to get DH mapping key" )
+        }
+        
+        // Initialize ephemeral parameters with parameters from the mapping key
+        guard let ephemeral_key = try? DHparams_dup_with_q(dh_mapping_key) else {
+            // Error
+            throw PACEHandlerError.DHKeyAgreementError("Unable to get initialise ephemeral parameters from DH mapping key")
+        }
+        defer{ DH_free(ephemeral_key) }
+        
+        DH_get0_pqg(dh_mapping_key, &p, nil, &g)
+        
+        let p_1 = BN_dup(p)
+        let g_new = BN_dup(g)
+        
+        // Encrypt the nonce using the symmetric key in (TODO: DES encryption)
+        let iv = [UInt8](repeating: 0, count: kCCBlockSizeAES128)
+        let x_mem = AESEncrypt(key: piccNonce, message: pcdNonce, iv: iv)
+        
+        // Compute the shared secret using the mapping key and the passports public mapping key
+        let x_bn = BN_bin2bn(x_mem, Int32(x_mem.count), nil)
+        defer { BN_free( x_bn ) }
+        
+        guard BN_sub_word(p_1, 1) == 1,
+              BN_div(a, nil, p_1, q, bn_ctx) == 1,
+              BN_mod_exp(g_new, x_bn, a, p, bn_ctx) == 1 else {
+                  throw PACEHandlerError.DHKeyAgreementError( "Failed to generate new parameters" )
+              }
+        
+        // TODO: check if g~ != 1
+        
+        guard DH_set0_pqg(ephemeral_key, BN_dup(p), q, g_new) == 1 else {
+            // Error
+            throw PACEHandlerError.DHKeyAgreementError( "Unable to set DH pqg paramerters" )
+        }
+        
+        // Set the ephemeral params
+        guard let ephemeralParams = EVP_PKEY_new() else {
+            throw PACEHandlerError.ECDHKeyAgreementError( "Unable to create ephemeral params" )
+        }
+        
+        guard EVP_PKEY_set1_DH(ephemeralParams, ephemeral_key) == 1 else {
+            // Error
+            EVP_PKEY_free( ephemeralParams )
+            throw PACEHandlerError.DHKeyAgreementError( "Unable to set ephemeral parameters" )
+        }
+        return ephemeralParams
+    }
+    
     /// Does the ECDH key Mapping agreement
     /// - Parameter mappingKey - Pointer to an EVP_PKEY structure containing the mapping key
     /// - Parameter passportPublicKeyData - byte array containing the publick key read from the passport
@@ -893,6 +960,23 @@ extension PACEHandler {
         EC_POINT_mul(group, output, nil, ecp, privateECKey, nil)
         
         return output
+    }
+    
+    public func DHparams_dup_with_q(_ dh: OpaquePointer) throws -> OpaquePointer {
+        let bn_ctx = BN_CTX_new()
+        BN_CTX_start(bn_ctx)
+        var p = BN_CTX_get(bn_ctx)
+        var q = BN_CTX_get(bn_ctx)
+        var g = BN_CTX_get(bn_ctx)
+        
+        guard let dup = DHparams_dup(dh) else {
+            throw PACEHandlerError.DHKeyAgreementError("Unable to duplicate dh")
+        }
+        defer{ DH_free(dup) }
+        DH_get0_pqg(dh, &p, &q, &g);
+        DH_set0_pqg(dup, BN_dup(p), BN_dup(q), BN_dup(g));
+        
+        return dup;
     }
 }
 
