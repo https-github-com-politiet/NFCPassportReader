@@ -21,30 +21,27 @@ extension NFCViewDisplayMessage {
     public var description: String {
         switch self {
             case .requestPresentPassport:
-                return "Hold your iPhone near an NFC enabled passport."
-            case .authenticatingWithPassport(let progress):
+                return NSLocalizedString("pit.idk-ios-nfcreader.scan.requestPresentPassport", bundle: .main, comment: "")
+            case .authenticatingWithPassport(let progress), .readingDataGroupProgress(let _, let progress):
                 let progressString = handleProgress(percentualProgress: progress)
-                return "Authenticating with passport.....\n\n\(progressString)"
-            case .readingDataGroupProgress(let dataGroup, let progress):
-                let progressString = handleProgress(percentualProgress: progress)
-                return "Reading \(dataGroup).....\n\n\(progressString)"
+                return NSLocalizedString("pit.idk-ios-nfcreader.scan.inProgress", bundle: .main, comment: "") + "...\n\n\(progressString)"
             case .error(let tagError):
                 switch tagError {
                     case NFCPassportReaderError.TagNotValid:
-                        return "Tag not valid."
+                        return NSLocalizedString("pit.idk-ios-nfcreader.scan.error.TagNotValid", bundle: .main, comment: "")
                     case NFCPassportReaderError.MoreThanOneTagFound:
-                        return "More than 1 tags was found. Please present only 1 tag."
+                        return NSLocalizedString("pit.idk-ios-nfcreader.scan.error.MoreThanOneTagFound", bundle: .main, comment: "")
                     case NFCPassportReaderError.ConnectionError:
-                        return "Connection error. Please try again."
+                        return NSLocalizedString("pit.idk-ios-nfcreader.scan.error.ConnectionError", bundle: .main, comment: "")
                     case NFCPassportReaderError.InvalidMRZKey:
-                        return "MRZ Key not valid for this document."
+                        return NSLocalizedString("pit.idk-ios-nfcreader.scan.error.InvalidMRZKey", bundle: .main, comment: "")
                     case NFCPassportReaderError.ResponseError(let description, let sw1, let sw2):
-                        return "Sorry, there was a problem reading the passport. \(description) - (0x\(sw1), 0x\(sw2)"
+                        return NSLocalizedString("pit.idk-ios-nfcreader.scan.error.responseError", bundle: .main, comment: "") + " \(description) - (0x\(sw1), 0x\(sw2)"
                     default:
-                        return "Sorry, there was a problem reading the passport. Please try again"
+                        return NSLocalizedString("pit.idk-ios-nfcreader.scan.error.default", bundle: .main, comment: "")
                 }
             case .successfulRead:
-                return "Passport read successfully"
+                return NSLocalizedString("pit.idk-ios-nfcreader.scan.success", bundle: .main, comment: "")
         }
     }
     
