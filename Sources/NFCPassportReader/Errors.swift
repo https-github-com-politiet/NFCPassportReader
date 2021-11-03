@@ -32,6 +32,7 @@ public enum NFCPassportReaderError: Error {
     case ConnectionError
     case UserCanceled
     case InvalidMRZKey
+    case PaceNotSupported
     case MoreThanOneTagFound
     case InvalidHashAlgorithmSpecified
     case InvalidDataPassed(String)
@@ -60,6 +61,7 @@ public enum NFCPassportReaderError: Error {
             case .ConnectionError: return "ConnectionError"
             case .UserCanceled: return "UserCanceled"
             case .InvalidMRZKey: return "InvalidMRZKey"
+            case .PaceNotSupported: return "PaceNotSupported"
             case .MoreThanOneTagFound: return "MoreThanOneTagFound"
             case .InvalidHashAlgorithmSpecified: return "InvalidHashAlgorithmSpecified"
             case .InvalidDataPassed(let reason) : return "Invalid data passed - \(reason)"

@@ -381,12 +381,16 @@ extension PassportReader {
         do {
             self.paceHandler = try PACEHandler( cardAccess: cardAccess, tagReader: tagReader )
 
-            paceHandler?.doPACE(paceKeySeed: accessKey, paceKeyReference: paceKeyReference) { paceSucceeded in
+            paceHandler?.doPACE(paceKeySeed: accessKey, paceKeyReference: paceKeyReference) { (paceSucceeded, readerError) in
                 if paceSucceeded {
                     completed(nil)
                 } else {
                     self.paceHandler = nil
-                    completed(NFCPassportReaderError.InvalidDataPassed("PACE Failed"))
+                    if let readerError = readerError {
+                        completed(readerError)
+                    } else {
+                        completed(NFCPassportReaderError.InvalidDataPassed("PACE Failed"))
+                    }
                 }
             }
         } catch let error as NFCPassportReaderError {
