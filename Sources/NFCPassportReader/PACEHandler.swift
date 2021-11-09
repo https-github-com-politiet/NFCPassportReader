@@ -185,10 +185,11 @@ public class PACEHandler {
     /// Performs PACE Step 1- receives an encrypted nonce from the passport and decypts it with the  PACE key - derived from MRZ, CAN (not yet supported)
     func doStep1() {
         Log.debug("Doing PACE Step1...")
-        tagReader.sendGeneralAuthenticate(data: [], isLast: false, completed: { [unowned self] response, error in
+        tagReader.sendGeneralAuthenticate(data: [], isLast: false, completed: { [weak self] response, error in
+            guard let sself = self else { return }
             if let error = error {
-                handleError( "Step1", "Failed to send General Authenticate Step1 - \(error.localizedDescription)", readerError: error )
-                return doPACEForNextAlgorithm()
+                sself.handleError( "Step1", "Failed to send General Authenticate Step1 - \(error.localizedDescription)", readerError: error )
+                return sself.doPACEForNextAlgorithm()
             }
             
             do {
@@ -197,24 +198,24 @@ public class PACEHandler {
                 Log.verbose( "Encrypted nonce - \(binToHexRep(encryptedNonce, asArray:true))" )
 
                 let decryptedNonce: [UInt8]
-                if self.cipherAlg == "DESede" {
+                if sself.cipherAlg == "DESede" {
                     let iv = [UInt8](repeating:0, count: 8)
-                    decryptedNonce = tripleDESDecrypt(key: self.paceKey, message: encryptedNonce, iv: iv)
-                } else if self.cipherAlg == "AES" {
+                    decryptedNonce = tripleDESDecrypt(key: sself.paceKey, message: encryptedNonce, iv: iv)
+                } else if sself.cipherAlg == "AES" {
                     let iv = [UInt8](repeating:0, count: 16)
-                    decryptedNonce = AESDecrypt(key: self.paceKey, message: encryptedNonce, iv: iv)
+                    decryptedNonce = AESDecrypt(key: sself.paceKey, message: encryptedNonce, iv: iv)
                 } else {
-                    self.handleError( "Step1", "Unsupported cipher algorithm requested - \(cipherAlg)", readerError: NFCPassportReaderError.NotYetSupported("Unsupported cipher algorithm \(cipherAlg)") )
-                    return doPACEForNextAlgorithm()
+                    sself.handleError( "Step1", "Unsupported cipher algorithm requested - \(sself.cipherAlg)", readerError: NFCPassportReaderError.NotYetSupported("Unsupported cipher algorithm \(sself.cipherAlg)") )
+                    return sself.doPACEForNextAlgorithm()
                 }
 
                 Log.verbose( "Decrypted nonce - \(binToHexRep(decryptedNonce, asArray:true) )" )
                 
-                self.doStep2(passportNonce: decryptedNonce)
+                sself.doStep2(passportNonce: decryptedNonce)
 
             } catch {
-                handleError( "Step1", "Unable to get encryptedNonce - \(error.localizedDescription)", readerError: nil )
-                return doPACEForNextAlgorithm()
+                sself.handleError( "Step1", "Unable to get encryptedNonce - \(error.localizedDescription)", readerError: nil )
+                return sself.doPACEForNextAlgorithm()
             }
         })
     }
