@@ -130,7 +130,10 @@ class SOD : DataGroup {
             throw OpenSSLError.UnableToExtractSignedDataFromPKCS7("Data in invalid format")
         }
         
-        return String(digestAlgo.value)
+        let digestAlgoString = String(digestAlgo.value)
+        Log.debug("SOD Encapsulated Content Digest Algorithm: \(digestAlgoString)")
+
+        return digestAlgoString
     }
     
     /// Gets the signed attributes section (if present)
@@ -234,6 +237,9 @@ class SOD : DataGroup {
         // sha1WithRSAEncryption => default pkcs1
         // sha256WithRSAEncryption => default pkcs1
         // rsassaPss => pss        
-        return signatureAlgo.value
+        let signatureAlgoString = signatureAlgo.value
+        Log.debug("SOD Signature Algorithm: \(signatureAlgoString)")
+
+        return signatureAlgoString
     }
 }
