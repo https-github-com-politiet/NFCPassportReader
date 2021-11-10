@@ -268,6 +268,7 @@ public class NFCPassportModel {
             do {
                 try validateAndExtractSigningCertificates( masterListURL: masterListURL )
             } catch let error {
+                Log.error("Failed in validateAndExtractSigningCertificates: \(error)")
                 verificationErrors.append( error )
             }
         }
@@ -275,6 +276,7 @@ public class NFCPassportModel {
         do {
             try ensureReadDataNotBeenTamperedWith( useCMSVerification : useCMSVerification )
         } catch let error {
+            Log.error("Failed in ensureReadDataNotBeenTamperedWith: \(error)")
             verificationErrors.append( error )
         }
     }
