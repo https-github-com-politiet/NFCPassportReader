@@ -97,7 +97,7 @@ class SOD : DataGroup {
             return key
         }
         
-        throw OpenSSLError.UnableToExtractSignedDataFromPKCS7("Unable to get public key")
+        throw OpenSSLError.UnableToExtractSignedDataFromPKCS7("SOD.getPublicKey - Unable to get public key")
     }
     
     
@@ -109,7 +109,7 @@ class SOD : DataGroup {
               let encContent = signedData.getChild(2)?.getChild(1),
               let content = encContent.getChild(0) else {
             
-            throw OpenSSLError.UnableToExtractSignedDataFromPKCS7("Data in invalid format")
+            throw OpenSSLError.UnableToExtractSignedDataFromPKCS7("getEncapsulatedContent - Data in invalid format")
         }
         
         var sigData : Data?
@@ -117,7 +117,7 @@ class SOD : DataGroup {
             sigData = Data(hexRepToBin( content.value ))
         }
         
-        guard let ret = sigData else { throw OpenSSLError.UnableToExtractSignedDataFromPKCS7("noDataReturned") }
+        guard let ret = sigData else { throw OpenSSLError.UnableToExtractSignedDataFromPKCS7("getEncapsulatedContent - noDataReturned") }
         return ret
     }
     
@@ -127,10 +127,13 @@ class SOD : DataGroup {
     func getEncapsulatedContentDigestAlgorithm() throws -> String {
         guard let signedData = asn1.getChild(1)?.getChild(0),
               let digestAlgo = signedData.getChild(1)?.getChild(0)?.getChild(0) else {
-            throw OpenSSLError.UnableToExtractSignedDataFromPKCS7("Data in invalid format")
+            throw OpenSSLError.UnableToExtractSignedDataFromPKCS7("getEncapsulatedContentDigestAlgorithm - Data in invalid format")
         }
         
-        return String(digestAlgo.value)
+        let digestAlgoString = String(digestAlgo.value)
+        Log.debug("SOD Encapsulated Content Digest Algorithm: \(digestAlgoString)")
+
+        return digestAlgoString
     }
     
     /// Gets the signed attributes section (if present)
@@ -143,7 +146,7 @@ class SOD : DataGroup {
               let signerInfo = signedData.getChild(4),
               let signedAttrs = signerInfo.getChild(0)?.getChild(3) else {
             
-            throw OpenSSLError.UnableToExtractSignedDataFromPKCS7("Data in invalid format")
+            throw OpenSSLError.UnableToExtractSignedDataFromPKCS7("getSignedAttributes - Data in invalid format")
         }
         
         var bytes = [UInt8](self.pkcs7CertificateData[signedAttrs.pos ..< signedAttrs.pos + signedAttrs.headerLen + signedAttrs.length])
@@ -174,7 +177,7 @@ class SOD : DataGroup {
               let signerInfo = signedData.getChild(4),
               let signedAttrs = signerInfo.getChild(0)?.getChild(3) else {
             
-            throw OpenSSLError.UnableToExtractSignedDataFromPKCS7("Data in invalid format")
+            throw OpenSSLError.UnableToExtractSignedDataFromPKCS7("getMessageDigestFromSignedAttributes - Data in invalid format")
         }
         
         // Find the messageDigest in the signedAttributes section
@@ -192,7 +195,7 @@ class SOD : DataGroup {
             }
         }
         
-        guard let messageDigest = sigData else { throw OpenSSLError.UnableToExtractSignedDataFromPKCS7("No messageDigest Returned") }
+        guard let messageDigest = sigData else { throw OpenSSLError.UnableToExtractSignedDataFromPKCS7("getMessageDigestFromSignedAttributes - No messageDigest Returned") }
         
         return messageDigest
     }
@@ -206,7 +209,7 @@ class SOD : DataGroup {
               let signerInfo = signedData.getChild(4),
               let signature = signerInfo.getChild(0)?.getChild(5) else {
             
-            throw OpenSSLError.UnableToExtractSignedDataFromPKCS7("Data in invalid format")
+            throw OpenSSLError.UnableToExtractSignedDataFromPKCS7("getSignature - Data in invalid format")
         }
         
         var sigData : Data?
@@ -214,7 +217,7 @@ class SOD : DataGroup {
             sigData = Data(hexRepToBin( signature.value ))
         }
         
-        guard let ret = sigData else { throw OpenSSLError.UnableToExtractSignedDataFromPKCS7("noDataReturned") }
+        guard let ret = sigData else { throw OpenSSLError.UnableToExtractSignedDataFromPKCS7("getSignature - noDataReturned") }
         return ret
     }
     
@@ -227,13 +230,16 @@ class SOD : DataGroup {
               let signerInfo = signedData.getChild(4),
               let signatureAlgo = signerInfo.getChild(0)?.getChild(4)?.getChild(0) else {
             
-            throw OpenSSLError.UnableToExtractSignedDataFromPKCS7("Data in invalid format")
+            throw OpenSSLError.UnableToExtractSignedDataFromPKCS7("getSignatureAlgorithm - Data in invalid format")
         }
         
         // Vals I've seen are:
         // sha1WithRSAEncryption => default pkcs1
         // sha256WithRSAEncryption => default pkcs1
         // rsassaPss => pss        
-        return signatureAlgo.value
+        let signatureAlgoString = signatureAlgo.value
+        Log.debug("SOD Signature Algorithm: \(signatureAlgoString)")
+
+        return signatureAlgoString
     }
 }

@@ -268,6 +268,7 @@ public class NFCPassportModel {
             do {
                 try validateAndExtractSigningCertificates( masterListURL: masterListURL )
             } catch let error {
+                Log.error("Failed in validateAndExtractSigningCertificates: \(error)")
                 verificationErrors.append( error )
             }
         }
@@ -275,6 +276,7 @@ public class NFCPassportModel {
         do {
             try ensureReadDataNotBeenTamperedWith( useCMSVerification : useCMSVerification )
         } catch let error {
+            Log.error("Failed in ensureReadDataNotBeenTamperedWith: \(error)")
             verificationErrors.append( error )
         }
     }
@@ -406,16 +408,21 @@ public class NFCPassportModel {
         var signedData : Data
         documentSigningCertificateVerified = false
         do {
-            if useCMSVerification {
-                signedData = try OpenSSLUtils.verifyAndReturnSODEncapsulatedDataUsingCMS(sod: sod)
-            } else {
-                signedData = try OpenSSLUtils.verifyAndReturnSODEncapsulatedData(sod: sod)
-            }
+            signedData = try OpenSSLUtils.verifyAndReturnSODEncapsulatedData(sod: sod)
             documentSigningCertificateVerified = true
         } catch {
-            signedData = try sod.getEncapsulatedContent()
+            Log.debug("Error verifying document signing certificate using RFS5652 method - \(error)")
+            Log.debug("Trying to verify document signing certificate using OpenSSL CMS method...")
+
+            do {
+                signedData = try OpenSSLUtils.verifyAndReturnSODEncapsulatedDataUsingCMS(sod: sod)
+                documentSigningCertificateVerified = true
+            } catch {
+                Log.error("Error verifying document signing certificate - \(error)")
+                signedData = try sod.getEncapsulatedContent()
+            }
         }
-                
+
         // Now Verify passport data by comparing compare Hashes in SOD against
         // computed hashes to ensure data not been tampered with
         passportDataNotTampered = false

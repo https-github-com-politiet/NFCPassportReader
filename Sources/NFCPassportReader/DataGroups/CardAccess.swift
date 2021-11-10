@@ -19,7 +19,13 @@ public class CardAccess {
     
     var paceInfo : PACEInfo? {
         get {
-            return (securityInfos.filter { ($0 as? PACEInfo) != nil }).first as? PACEInfo
+            return paceInfos.count >= 0 ? paceInfos[0] : nil
+        }
+    }
+    
+    var paceInfos: [PACEInfo?] {
+        get {
+            return (securityInfos.filter { ($0 as? PACEInfo) != nil }) as? [PACEInfo?] ?? []
         }
     }
     
