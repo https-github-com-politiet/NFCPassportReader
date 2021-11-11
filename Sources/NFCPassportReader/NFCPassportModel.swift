@@ -21,7 +21,6 @@ public enum PassportAuthenticationStatus {
 
 @available(iOS 13, macOS 10.15, *)
 public class NFCPassportModel {
-    
     public private(set) lazy var documentType : String = { return String( passportDataElements?["5F03"]?.first ?? "?" ) }()
     public private(set) lazy var documentSubType : String = { return String( passportDataElements?["5F03"]?.last ?? "?" ) }()
     public private(set) lazy var personalNumber : String = { return (passportDataElements?["53"] ?? "?").replacingOccurrences(of: "<", with: "" ) }()
@@ -69,6 +68,14 @@ public class NFCPassportModel {
               let telephone = dg11.telephone else { return nil }
         return telephone
     }()
+
+    public private(set) lazy var typeOfDocument: DocumentType = {
+        return DocumentType.toDocumentType(code: documentType)
+    }()
+
+    public var isNorwegianEmergencyPassport: Bool {
+        return typeOfDocument == .norwegianEmergencyPassport
+    }
 
     public private(set) lazy var documentSigningCertificate : X509Wrapper? = {
         return certificateSigningGroups[.documentSigningCertificate]
@@ -142,6 +149,18 @@ public class NFCPassportModel {
         return dg2.getImage()
     }
 
+    public var eyeColor: EyeColor {
+        guard let dg2 = dataGroupsRead[.DG2] as? DataGroup2 else { return .unknown }
+
+        return EyeColor.toEyeColor(dg2.eyeColor)
+    }
+
+    public var hairColor: HairColor {
+        guard let dg2 = dataGroupsRead[.DG2] as? DataGroup2 else { return .unknown }
+
+        return HairColor.toHairColor(dg2.hairColor)
+    }
+
     public var signatureImage : UIImage? {
         guard let dg7 = dataGroupsRead[.DG7] as? DataGroup7 else { return nil }
         
@@ -196,6 +215,16 @@ public class NFCPassportModel {
         if let challenge = AAChallenge, let signature = AASignature {
             verifyActiveAuthentication(challenge: challenge, signature: signature)
         }
+    }
+
+    /// For Norwegian emergency passports. Sets `issuingAuthority` to NOR,
+    /// `typeOfDocument` to DocumentType.norwegianEmergencyPassport
+    /// - Parameter documentNumber: document number in string format
+    public func setAsNorwegianEmergencyPassport(documentNumber: String) {
+        self.documentNumber = documentNumber
+
+        self.issuingAuthority = "NOR"
+        self.typeOfDocument = DocumentType.norwegianEmergencyPassport
     }
     
     public func addDataGroup(_ id : DataGroupId, dataGroup: DataGroup ) {
@@ -517,3 +546,4 @@ public class NFCPassportModel {
         return (sodHashAlgo, sodHashes)
     }
 }
+
