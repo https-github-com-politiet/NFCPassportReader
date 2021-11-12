@@ -418,6 +418,11 @@ public class PACEHandler {
             if let error = error {
                 // Error
                 sself.handleError( "Step3 KeyAgreement", "Error - \(error.localizedDescription)", readerError: error )
+                // If MRZ is invalid there is no need to loop over more algorithms
+                if error.localizedDescription == NFCPassportReaderError.InvalidMRZKey.localizedDescription {
+                    self?.completedHandler?(false, error)
+                    return
+                }
                 return sself.doPACEForNextAlgorithm()
             }
             

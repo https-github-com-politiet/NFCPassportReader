@@ -19,13 +19,15 @@ public class CardAccess {
     
     var paceInfo : PACEInfo? {
         get {
-            return paceInfos.count >= 0 ? paceInfos[0] : nil
+            return paceInfos.first ?? nil
         }
     }
     
     var paceInfos: [PACEInfo?] {
         get {
-            return (securityInfos.filter { ($0 as? PACEInfo) != nil }) as? [PACEInfo?] ?? []
+            return (securityInfos.compactMap { $0 as? PACEInfo }
+                        .filter { ((try? $0.getMappingType()) == PACEMappingType.GM ||
+                                   (try? $0.getMappingType()) == PACEMappingType.CAM) })
         }
     }
     
