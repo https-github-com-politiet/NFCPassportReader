@@ -22,6 +22,10 @@ public class Log {
     public static var storeLogs = false
     public static var logData = [String]()
 
+    public static var isEmpty: Bool {
+        return logData.count == 0
+    }
+
     public class func verbose( _ msg : @autoclosure () -> String ) {
         log( .verbose, msg )
     }
