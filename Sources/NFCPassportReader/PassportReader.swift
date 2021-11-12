@@ -33,6 +33,8 @@ public class PassportReader : NSObject {
     private var paceKeyReference : UInt8?
     private var dataAmountToReadOverride : Int? = nil
     
+    private var scanInProgress: Bool = false
+    
     private var scanCompletedHandler: ((NFCPassportModel?, NFCPassportReaderError?)->())!
     private var nfcViewDisplayMessageHandler: ((NFCViewDisplayMessage) -> String?)?
     private var masterListURL : URL?
@@ -93,10 +95,12 @@ public class PassportReader : NSObject {
         }
         
         if NFCTagReaderSession.readingAvailable {
-            readerSession = NFCTagReaderSession(pollingOption: [.iso14443], delegate: self, queue: nil)
-
-            self.updateReaderSessionMessage( alertMessage: NFCViewDisplayMessage.requestPresentPassport )
-            readerSession?.begin()
+            if !self.scanInProgress {
+                readerSession = NFCTagReaderSession(pollingOption: [.iso14443], delegate: self, queue: nil)
+                
+                self.updateReaderSessionMessage( alertMessage: NFCViewDisplayMessage.requestPresentPassport )
+                readerSession?.begin()
+            }
         }
     }
 }
@@ -108,6 +112,7 @@ extension PassportReader : NFCTagReaderSessionDelegate {
         // If necessary, you may perform additional operations on session start.
         // At this point RF polling is enabled.
         Log.debug( "tagReaderSessionDidBecomeActive" )
+        self.scanInProgress = true
     }
     
     public func tagReaderSession(_ session: NFCTagReaderSession, didInvalidateWithError error: Error) {
@@ -115,6 +120,7 @@ extension PassportReader : NFCTagReaderSessionDelegate {
         // You must create a new session to restart RF polling.
         Log.debug( "tagReaderSession:didInvalidateWithError - \(error.localizedDescription)" )
         self.readerSession = nil
+        self.scanInProgress = false
 
         if let readerError = error as? NFCReaderError, readerError.code == NFCReaderError.readerSessionInvalidationErrorUserCanceled
             && self.shouldNotReportNextReaderSessionInvalidationErrorUserCanceled {
