@@ -71,7 +71,7 @@ public class PACEHandler {
         
         self.paceInfos = cardAccess.paceInfos
         
-        guard let paceInfo: PACEInfo = paceInfos[0] else {
+        guard let paceInfo: PACEInfo = cardAccess.paceInfo else {
             throw NFCPassportReaderError.NotYetSupported( "PACE not supported" )
         }
         
