@@ -233,6 +233,8 @@ public class TagReader {
         
         // First select master file
         let cmd : NFCISO7816APDU = NFCISO7816APDU(instructionClass: 0x00, instructionCode: 0xA4, p1Parameter: 0x00, p2Parameter: 0x0C, data: Data([0x3f,0x00]), expectedResponseLength: 256)
+
+        Log.info("Attempting to read CardAccess file")
         
         send( cmd: cmd) { response, error in
             if let error = error {
