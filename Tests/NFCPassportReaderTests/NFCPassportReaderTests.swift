@@ -1,6 +1,8 @@
 import XCTest
-//import CoreNFC
 import OpenSSL
+#if (canImport(CoreNFC))
+import CoreNFC
+#endif
 
 @testable import NFCPassportReader
 

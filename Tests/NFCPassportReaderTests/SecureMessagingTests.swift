@@ -9,7 +9,9 @@
 import XCTest
 import Foundation
 import NFCPassportReader
+#if (canImport(CoreNFC))
 import CoreNFC
+#endif
 
 final class SecureMessagingTests: XCTestCase {
     let smKeyGenerator = SecureMessagingSessionKeyGenerator()
