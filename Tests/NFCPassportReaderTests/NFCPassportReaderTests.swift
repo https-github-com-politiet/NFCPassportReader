@@ -272,5 +272,7 @@ final class NFCPassportReaderTests: XCTestCase {
             ("testSecureMessagingUnprotectWithData", testSecureMessagingUnprotectWithData)
         ])
         #endif
+
+        return tests
     }
 }
