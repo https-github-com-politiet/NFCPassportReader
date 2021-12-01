@@ -8,7 +8,6 @@
 @testable import NFCPassportReader
 import XCTest
 import Foundation
-import NFCPassportReader
 
 // ICAO docs part 11 appendix D
 final class BACTests: XCTestCase {

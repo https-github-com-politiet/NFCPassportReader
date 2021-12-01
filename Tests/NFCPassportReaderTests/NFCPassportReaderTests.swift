@@ -255,15 +255,22 @@ final class NFCPassportReaderTests: XCTestCase {
         }
 
     
-    static var allTests = [
-        ("testBinToHexRep", testBinToHexRep),
-        ("testHexRepToBin", testHexRepToBin),
-        ("testAsn1Length", testAsn1Length),
-        ("testToASNLength", testToASNLength),
-        ("testDES3Encryption", testDES3Encryption),
-        ("testDES3Decryption", testDES3Decryption),
-        ("testSecureMessagingProtect", testSecureMessagingProtect),
-        ("testSecureMessagingUnprotectNoData", testSecureMessagingUnprotectNoData),
-        ("testSecureMessagingUnprotectWithData", testSecureMessagingUnprotectWithData),
-    ]
+    static var allTests: [(String, (NFCPassportReaderTests) -> () -> ())] {
+        var tests = [
+            ("testBinToHexRep", testBinToHexRep),
+            ("testHexRepToBin", testHexRepToBin),
+            ("testAsn1Length", testAsn1Length),
+            ("testToASNLength", testToASNLength),
+            ("testDES3Encryption", testDES3Encryption),
+            ("testDES3Decryption", testDES3Decryption)
+        ]
+
+        #if canImport(CoreNFC)
+        tests.append(contentsOf: [
+            ("testSecureMessagingProtect", testSecureMessagingProtect),
+            ("testSecureMessagingUnprotectNoData", testSecureMessagingUnprotectNoData),
+            ("testSecureMessagingUnprotectWithData", testSecureMessagingUnprotectWithData)
+        ])
+        #endif
+    }
 }
