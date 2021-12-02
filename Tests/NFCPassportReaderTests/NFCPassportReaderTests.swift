@@ -1,6 +1,8 @@
 import XCTest
-import CoreNFC
 import OpenSSL
+#if (canImport(CoreNFC))
+import CoreNFC
+#endif
 
 @testable import NFCPassportReader
 
@@ -155,7 +157,8 @@ final class NFCPassportReaderTests: XCTestCase {
         let val = String(data:Data(dec), encoding:.utf8)
         XCTAssertEqual( val, "maryhadalittlelambaaaaaa" )
     }
-    
+
+    #if (canImport(CoreNFC))
     func testSecureMessagingProtect() {
         
         let KSenc = hexRepToBin("8FDCFE759E40A4DF4575160B3BFB79FB")
@@ -178,7 +181,10 @@ final class NFCPassportReaderTests: XCTestCase {
         XCTAssertEqual( hexDataRep, "870901CC69089F8F1AB4698E08B6334B3ABD5A9E09" )
         XCTAssertEqual( protApdu.expectedResponseLength, 0 )
     }
+    #endif
 
+
+    #if (canImport(CoreNFC))
     func testSecureMessagingUnprotectNoData() {
         
         // Note - same keys as above but SSC incremented by 1 as per spec
@@ -197,7 +203,9 @@ final class NFCPassportReaderTests: XCTestCase {
             XCTAssertEqual( rapdu.sw2, 0x00 )
         }
     }
+    #endif
 
+    #if (canImport(CoreNFC))
     func testSecureMessagingUnprotectWithData() {
         
         let KSenc = hexRepToBin("8FDCFE759E40A4DF4575160B3BFB79FB")
@@ -216,6 +224,7 @@ final class NFCPassportReaderTests: XCTestCase {
 
         }
     }
+    #endif
     
     
         func testConvertECDSAPlainTODer() {
@@ -246,15 +255,24 @@ final class NFCPassportReaderTests: XCTestCase {
         }
 
     
-    static var allTests = [
-        ("testBinToHexRep", testBinToHexRep),
-        ("testHexRepToBin", testHexRepToBin),
-        ("testAsn1Length", testAsn1Length),
-        ("testToASNLength", testToASNLength),
-        ("testDES3Encryption", testDES3Encryption),
-        ("testDES3Decryption", testDES3Decryption),
-        ("testSecureMessagingProtect", testSecureMessagingProtect),
-        ("testSecureMessagingUnprotectNoData", testSecureMessagingUnprotectNoData),
-        ("testSecureMessagingUnprotectWithData", testSecureMessagingUnprotectWithData),
-    ]
+    static var allTests: [(String, (NFCPassportReaderTests) -> () -> ())] {
+        var tests = [
+            ("testBinToHexRep", testBinToHexRep),
+            ("testHexRepToBin", testHexRepToBin),
+            ("testAsn1Length", testAsn1Length),
+            ("testToASNLength", testToASNLength),
+            ("testDES3Encryption", testDES3Encryption),
+            ("testDES3Decryption", testDES3Decryption)
+        ]
+
+        #if canImport(CoreNFC)
+        tests.append(contentsOf: [
+            ("testSecureMessagingProtect", testSecureMessagingProtect),
+            ("testSecureMessagingUnprotectNoData", testSecureMessagingUnprotectNoData),
+            ("testSecureMessagingUnprotectWithData", testSecureMessagingUnprotectWithData)
+        ])
+        #endif
+
+        return tests
+    }
 }

@@ -8,7 +8,6 @@
 @testable import NFCPassportReader
 import XCTest
 import Foundation
-import NFCPassportReader
 
 // ICAO docs part 11 appendix D
 final class BACTests: XCTestCase {
@@ -19,6 +18,8 @@ final class BACTests: XCTestCase {
     let rndIFD = hexRepToBin("781723860C06C226")
     let kIFD = hexRepToBin("0B795240CB7049B01C19B33E32804F0B")
     let iv : [UInt8] = [0, 0, 0, 0, 0, 0, 0, 0]
+
+    #if !os(macOS)
     var bacHandler = BACHandler()
     
     override func setUp() {
@@ -29,13 +30,17 @@ final class BACTests: XCTestCase {
         bacHandler.ksenc = kEnc
         bacHandler.ksmac = kMac
     }
+    #endif
 
+    #if !os(macOS)
     func testComputeKSeed() {
         let expectedKSeed = hexRepToBin("239AB9CB282DAF66231DC5A4DF6BFBAE")
         let generatedKSeed = bacHandler.generateInitialKseed(kmrz: mrzKey)
         XCTAssertEqual(expectedKSeed, generatedKSeed)
     }
-    
+    #endif
+
+    #if !os(macOS)
     func testGetBasicAccessKeys() {
         // Not using expected KEnc and KMac from Appendix D since adjusting parity is optional and not implemented here
         // Expected keys used are Ka and Kb concatenated (Without adjusted parity bits)
@@ -49,7 +54,8 @@ final class BACTests: XCTestCase {
             XCTFail("Could not derive Document Basic Access keys")
         }
     }
-    
+    #endif
+
     func testAuthAndEstablishmentOfSessionKeys_inspectionSystem_Part1() {
         let s = rndIFD + rndIC + kIFD
         let generatedEIFD = tripleDESEncrypt(key: kEnc, message: s, iv: iv)
@@ -64,7 +70,8 @@ final class BACTests: XCTestCase {
         let expectedResponseData = hexRepToBin("72C29C2371CC9BDB65B779B8E8D37B29ECC154AA56A8799FAE2F498F76ED92F25F1448EEA8AD90A7")
         XCTAssertEqual(expectedResponseData, generatedResponseData)
     }
-    
+
+    #if !os(macOS)
     func testAuthAndEstablishmentOfSessionKeys_inspectionSystem_Part2() {
         let responseData = hexRepToBin("46B9342A41396CD7386BF5803104D7CEDC122B9132139BAF2EEDC94EE178534F2F2D235D074D7449")
         // Not using expected KSEnc and KSMac from Appendix D since adjusting parity is optional and not implemented here
@@ -81,4 +88,5 @@ final class BACTests: XCTestCase {
             XCTFail("Could not derive Document Basic Access keys")
         }
     }
+    #endif
 }

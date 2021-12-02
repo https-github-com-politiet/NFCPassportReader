@@ -9,7 +9,9 @@
 import XCTest
 import Foundation
 import NFCPassportReader
+#if (canImport(CoreNFC))
 import CoreNFC
+#endif
 
 final class SecureMessagingTests: XCTestCase {
     let smKeyGenerator = SecureMessagingSessionKeyGenerator()
@@ -109,7 +111,8 @@ final class SecureMessagingTests: XCTestCase {
             }
         }
     }
-    
+
+    #if (canImport(CoreNFC))
     // ICAO docs part 11 appendix D
     func testSecureMessagingSpec_Part1() {
         let ksEnc = hexRepToBin("979EC13B1CBFE9DCD01AB0FED307EAE5")
@@ -144,7 +147,9 @@ final class SecureMessagingTests: XCTestCase {
         let rApdu = ResponseAPDU(data: hexRepToBin("990290008E08FA855A5D4C50A8ED9000"), sw1: 0x90, sw2: 0x00)
         XCTAssertNoThrow(try sm.unprotect(rapdu: rApdu))
     }
-    
+    #endif
+
+    #if (canImport(CoreNFC))
     // ICAO docs part 11 appendix D
     func testSecureMessagingSpec_Part2() {
         let ksEnc = hexRepToBin("979EC13B1CBFE9DCD01AB0FED307EAE5")
@@ -180,7 +185,9 @@ final class SecureMessagingTests: XCTestCase {
         // Step j
         // TODO: Determine length of structure: L = '14' + 2 = 22 bytes
     }
-    
+    #endif
+
+    #if (canImport(CoreNFC))
     // ICAO docs part 11 appendix D
     func testSecureMessagingSpec_Part3() {
         let ksEnc = hexRepToBin("979EC13B1CBFE9DCD01AB0FED307EAE5")
@@ -214,4 +221,5 @@ final class SecureMessagingTests: XCTestCase {
         let expectedDecryptedDo87 = hexRepToBin("04303130365F36063034303030305C026175")
         XCTAssertEqual(unprotectedApdu.data, expectedDecryptedDo87)
     }
+    #endif
 }
