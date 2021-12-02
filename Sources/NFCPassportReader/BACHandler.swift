@@ -10,6 +10,7 @@ import Foundation
 
 #if !os(macOS)
 import CoreNFC
+#endif
 
 @available(iOS 13, *)
 public class BACHandler {
@@ -219,4 +220,3 @@ public class BACHandler {
     }
     
 }
-#endif
