@@ -106,11 +106,11 @@ public class NFCPassportModel {
     public internal(set) var BACStatus : PassportAuthenticationStatus = .notDone
     public internal(set) var PACEStatus : PassportAuthenticationStatus = .notDone
     public internal(set) var chipAuthenticationStatus : PassportAuthenticationStatus = .notDone
+    public internal(set) var activeAuthenticationStatus : PassportAuthenticationStatus = .notDone
 
     public private(set) var passportCorrectlySigned : Bool = false
     public private(set) var documentSigningCertificateVerified : Bool = false
     public private(set) var passportDataNotTampered : Bool = false
-    public private(set) var activeAuthenticationPassed : Bool = false
     public private(set) var activeAuthenticationChallenge : [UInt8] = []
     public private(set) var activeAuthenticationSignature : [UInt8] = []
     public private(set) var verificationErrors : [Error] = []
@@ -168,7 +168,7 @@ public class NFCPassportModel {
     }
 #endif
 
-    public var activeAuthenticationSupported : Bool {
+    public var isActiveAuthenticationSupported : Bool {
         guard let dg15 = dataGroupsRead[.DG15] as? DataGroup15 else { return false }
         if dg15.ecdsaPublicKey != nil || dg15.rsaPublicKey != nil {
             return true
@@ -252,7 +252,7 @@ public class NFCPassportModel {
                 ret[dg.getName()] = base64
             }
         }
-        if includeActiveAuthenticationData && self.activeAuthenticationSupported {
+        if includeActiveAuthenticationData && self.isActiveAuthenticationSupported {
             ret["AAChallenge"] = Data(activeAuthenticationChallenge).base64EncodedString()
             ret["AASignature"] = Data(activeAuthenticationSignature).base64EncodedString()
         }
@@ -319,7 +319,7 @@ public class NFCPassportModel {
         Log.verbose( "   signature - \(binToHexRep(signature))")
 
         // Get AA Public key
-        self.activeAuthenticationPassed = false
+        self.activeAuthenticationStatus = .failed
         guard  let dg15 = self.dataGroupsRead[.DG15] as? DataGroup15 else { return }
         if let rsaKey = dg15.rsaPublicKey {
             do {
@@ -368,7 +368,7 @@ public class NFCPassportModel {
                 
                 // Check hashes match
                 if msgHash == digest {
-                    self.activeAuthenticationPassed = true
+                    self.activeAuthenticationStatus = .success
                     Log.debug( "Active Authentication (RSA) successful" )
                 } else {
                     Log.error( "Error verifying Active Authentication RSA signature - Hash doesn't match" )
@@ -378,7 +378,7 @@ public class NFCPassportModel {
             }
         } else if let ecdsaPublicKey = dg15.ecdsaPublicKey {
             if OpenSSLUtils.verifyECDSASignature( publicKey:ecdsaPublicKey, signature: signature, data: challenge ) {
-                self.activeAuthenticationPassed = true
+                self.activeAuthenticationStatus = .success
                 Log.debug( "Active Authentication (ECDSA) successful" )
             } else {
                 Log.error( "Error verifying Active Authentication ECDSA signature" )
