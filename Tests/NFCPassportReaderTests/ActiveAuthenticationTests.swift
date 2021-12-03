@@ -72,7 +72,7 @@ final class ActiveAuthenticationTests: XCTestCase {
         if expectedResult {
             XCTAssertTrue(model.activeAuthenticationStatus == .success)
         } else {
-            XCTAssertFalse(model.activeAuthenticationPassed == .success)
+            XCTAssertFalse(model.activeAuthenticationStatus == .success)
         }
     }
 }
