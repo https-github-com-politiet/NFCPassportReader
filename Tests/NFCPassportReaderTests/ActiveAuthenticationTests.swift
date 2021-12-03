@@ -70,9 +70,9 @@ final class ActiveAuthenticationTests: XCTestCase {
         model.verifyActiveAuthentication(challenge: challenge, signature: signature)
 
         if expectedResult {
-            XCTAssertTrue(model.activeAuthenticationPassed)
+            XCTAssertTrue(model.activeAuthenticationStatus == .success)
         } else {
-            XCTAssertFalse(model.activeAuthenticationPassed)
+            XCTAssertFalse(model.activeAuthenticationStatus == .success)
         }
     }
 }

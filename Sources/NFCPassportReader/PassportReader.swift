@@ -346,7 +346,12 @@ extension PassportReader {
     }
 
     func doActiveAuthenticationIfNeccessary( completed: @escaping ()->() ) {
-        guard self.passport.activeAuthenticationSupported else {
+        guard self.passport.isActiveAuthenticationSupported else {
+            completed()
+            return
+        }
+
+        guard self.passport.chipAuthenticationStatus != .success else {
             completed()
             return
         }
@@ -359,6 +364,7 @@ extension PassportReader {
             if let response = response {
                 self.passport.verifyActiveAuthentication( challenge:challenge, signature:response.data )
             } else {
+                self.passport.activeAuthenticationStatus = .failed
                 Log.error( "doInternalAuthentication failed - \(err?.localizedDescription ?? "")" )
             }
 
