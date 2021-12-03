@@ -364,6 +364,7 @@ extension PassportReader {
             if let response = response {
                 self.passport.verifyActiveAuthentication( challenge:challenge, signature:response.data )
             } else {
+                self.passport.activeAuthenticationStatus = .failed
                 Log.error( "doInternalAuthentication failed - \(err?.localizedDescription ?? "")" )
             }
 
