@@ -15,6 +15,7 @@ public enum NFCPassportReaderError: Error {
     case InvalidResponse
     case UnexpectedError
     case NFCNotSupported
+    case NFCNotAvailable
     case NoConnectedTag
     case D087Malformed
     case InvalidResponseChecksum
@@ -45,6 +46,7 @@ public enum NFCPassportReaderError: Error {
             case .InvalidResponse: return "InvalidResponse"
             case .UnexpectedError: return "UnexpectedError"
             case .NFCNotSupported: return "NFCNotSupported"
+            case .NFCNotAvailable: return "NFCNotAvailable"
             case .NoConnectedTag: return "NoConnectedTag"
             case .D087Malformed: return "D087Malformed"
             case .InvalidResponseChecksum: return "InvalidResponseChecksum"
