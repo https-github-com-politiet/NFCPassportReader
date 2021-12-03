@@ -139,7 +139,13 @@ extension PassportReader : NFCTagReaderSessionDelegate {
                     userError = NFCPassportReaderError.UnexpectedError
                 }
             } else {
-                Log.error( "tagReaderSession:didInvalidateWithError - Received error - \(error.localizedDescription)" )
+                let error = error as NSError
+                if error.domain == NFCErrorDomain, error.code == 203 {
+                    Log.error( "tagReaderSession:didInvalidateWithError - Received NFC Error - \(error.localizedDescription)" )
+                    userError = NFCPassportReaderError.NFCNotAvailable
+                } else {
+                    Log.error( "tagReaderSession:didInvalidateWithError - Received error - \(error.localizedDescription), error domain: \(error.domain), error code: \(error.code)" )
+                }
             }
             self.scanCompletedHandler(nil, userError)
         }
