@@ -36,6 +36,7 @@ public enum NFCPassportReaderError: Error {
     case PaceNotSupported
     case PaceFailed
     case MoreThanOneTagFound
+    case SessionTimeout
     case InvalidHashAlgorithmSpecified
     case InvalidDataPassed(String)
     case NotYetSupported(String)
@@ -67,6 +68,7 @@ public enum NFCPassportReaderError: Error {
             case .PaceNotSupported: return "PaceNotSupported"
             case .PaceFailed: return "PaceFailed"
             case .MoreThanOneTagFound: return "MoreThanOneTagFound"
+            case .SessionTimeout: return "SessionTimeout"
             case .InvalidHashAlgorithmSpecified: return "InvalidHashAlgorithmSpecified"
             case .InvalidDataPassed(let reason) : return "Invalid data passed - \(reason)"
             case .NotYetSupported(let reason) : return "Not yet supported - \(reason)"

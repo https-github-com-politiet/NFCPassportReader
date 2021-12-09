@@ -134,6 +134,9 @@ extension PassportReader : NFCTagReaderSessionDelegate {
                 case NFCReaderError.readerSessionInvalidationErrorUserCanceled:
                     Log.error( "     - User cancelled session" )
                     userError = NFCPassportReaderError.UserCanceled
+                case NFCReaderError.readerSessionInvalidationErrorSessionTimeout:
+                    Log.error( "     - Session timeout" )
+                    userError = NFCPassportReaderError.SessionTimeout
                 default:
                     Log.error( "     - some other error - \(readerError.localizedDescription)" )
                     userError = NFCPassportReaderError.UnexpectedError
