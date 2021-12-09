@@ -90,6 +90,39 @@ public class OpenSSLUtils {
         let str = OpenSSLUtils.bioToString( bio:out )
         return str
     }
+
+    static func getX509CertificatesFromPEM(PEMFile: URL) throws -> [X509Wrapper] {
+        let inf = BIO_new(BIO_s_mem())!
+        defer { BIO_free(inf) }
+
+        guard let pem = try? String(contentsOf: PEMFile) else {
+            throw OpenSSLError.UnableToGetX509CertificatesFromPEM("Unable to parse contents of PEMFile at path \(PEMFile.path)")
+        }
+
+        let _ = pem.withCString { ptr in
+            let len = strlen(ptr)
+            BIO_write(inf, ptr, Int32(len))
+        }
+
+        guard let certs = PEM_X509_INFO_read_bio(inf, nil, nil, nil) else {
+            throw OpenSSLError.UnableToGetX509CertificatesFromPEM("Could not read PEM_X509_INFO from PEMFile at path \(PEMFile.path)")
+        }
+        defer { sk_X509_INFO_pop_free(certs, X509_INFO_free) }
+
+        let numCerts = sk_X509_INFO_num(certs)
+
+        var ret = [X509Wrapper]()
+        for i in 0..<numCerts {
+            let stackItem = sk_X509_INFO_value(certs, i)
+            if let cert = stackItem?.pointee.x509,
+               let certWrapper = X509Wrapper(with: cert)
+            {
+                ret.append(certWrapper)
+            }
+        }
+
+        return ret
+    }
     
     
     /// Extracts a X509 certificate in PEM format from a PKCS7 container
@@ -142,9 +175,9 @@ public class OpenSSLUtils {
     /// The trusted certificates in this use case are typically from a Countries master list (see the scripts for  more informaton on how to prepare this)
     /// - Parameter x509Cert: The X509 certificate (in PEM format) to verify
     /// - Parameter CAFile: The URL path of a file containing the list of certificates used to try to discover and build a trust chain
+    /// - Parameter checkValidity: Set to true if all certificates in chain must be currently valid (notBefore / notAfter are both currently valid)
     /// - Returns: either the X509 issue signing certificate that was used to sign the passed in X509 certificate or an error
-    static func verifyTrustAndGetIssuerCertificate( x509 : X509Wrapper, CAFile : URL ) -> Result<X509Wrapper, OpenSSLError> {
-                
+    static func verifyTrustAndGetIssuerCertificate(x509: X509Wrapper, CAFile: URL, checkValidity: Bool) -> Result<X509Wrapper, OpenSSLError> {
         guard let cert_ctx = X509_STORE_new() else { return .failure(OpenSSLError.UnableToVerifyX509CertificateForSOD("Unable to create certificate store")) }
         defer { X509_STORE_free(cert_ctx) }
         
@@ -172,8 +205,13 @@ public class OpenSSLUtils {
             return .failure(OpenSSLError.UnableToVerifyX509CertificateForSOD("Unable to create new X509_STORE_CTX"))
         }
         defer { X509_STORE_CTX_free(store) }
-        
-        X509_STORE_set_flags(cert_ctx, 0)
+
+        if checkValidity {
+            X509_STORE_set_flags(cert_ctx, 0)
+        } else {
+            X509_STORE_set_flags(cert_ctx, UInt(X509_V_FLAG_NO_CHECK_TIME))
+        }
+
         rc = X509_STORE_CTX_init(store, cert_ctx, x509.cert, nil)
         if rc == 0 {
             return .failure(OpenSSLError.UnableToVerifyX509CertificateForSOD("Unable to initialise X509_STORE_CTX"))
@@ -186,7 +224,7 @@ public class OpenSSLUtils {
             
             return .failure(OpenSSLError.UnableToVerifyX509CertificateForSOD("Verification of certificate failed - errorCode \(err)"))
         }
-        
+
         // Get chain and issue certificate is the last cert in the chain
         let chain = X509_STORE_CTX_get1_chain(store);
         let nrCertsInChain = sk_X509_num(chain)

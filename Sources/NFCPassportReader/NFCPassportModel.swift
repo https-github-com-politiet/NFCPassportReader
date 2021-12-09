@@ -109,6 +109,8 @@ public class NFCPassportModel {
     public internal(set) var activeAuthenticationStatus : PassportAuthenticationStatus = .notDone
 
     public private(set) var passportCorrectlySigned : Bool = false
+    public private(set) var trustChainBuiltWithoutTime : Bool = false
+    public private(set) var issuingCountryIsInML : Bool = false
     public private(set) var documentSigningCertificateVerified : Bool = false
     public private(set) var passportDataNotTampered : Bool = false
     public private(set) var activeAuthenticationChallenge : [UInt8] = []
@@ -294,9 +296,11 @@ public class NFCPassportModel {
             
     /// This method performs the passive authentication
     /// Passive Authentication : Two Parts:
-    /// Part 1 - Has the SOD (Security Object Document) been signed by a valid country signing certificate authority (CSCA)?
-    /// Part 2 - has it been tampered with (e.g. hashes of Datagroups match those in the SOD?
-    ///        guard let sod = model.getDataGroup(.SOD) else { return }
+    /// Part 1 - 1. Has the SOD (Security Object Document) been signed by a country signing certificate authority (CSCA), regardless of the validity of either certificate? (NON-STANDARD)
+    /// Part 1 - 2. Is the documents issuing country present in the countries included in masterlist? (NON-STANDARD)
+    /// Part 1 - 3. Has the SOD been signed by a CSCA where both certificates are currently valid?
+    /// Part 2 - 1. Has the SOD content been signed with the DSC public key?
+    /// Part 2 - 2. Has it been tampered with (e.g. computed hashes of Datagroups do not match those in the SOD)?
     ///
     /// - Parameter masterListURL: the path to the masterlist to try to verify the document signing certiifcate in the SOD
     /// - Parameter useCMSVerification: Should we use OpenSSL CMS verification to verify the SOD content
@@ -306,11 +310,28 @@ public class NFCPassportModel {
     ///         CMS Verification currently there just in case
     public func verifyPassport( masterListURL: URL?, useCMSVerification : Bool = false ) {
         if let masterListURL = masterListURL {
+            // 1. Can a trust chain be built from DSC to CSCA in masterlist *without* checking validity of certificates?
             do {
-                try validateAndExtractSigningCertificates( masterListURL: masterListURL )
+                self.trustChainBuiltWithoutTime = try validateAndExtractSigningCertificates(masterListURL: masterListURL, checkValidity: false)
             } catch let error {
-                Log.error("Failed in validateAndExtractSigningCertificates: \(error)")
+                Log.error("Failed in validateAndExtractSigningCertificates with NO_CHECK_TIME: \(error)")
                 verificationErrors.append( error )
+            }
+
+            // 2. Is the documents issuing authority included in the masterlist?
+            do {
+                self.issuingCountryIsInML = try isIssuingCountryInMasterlist(masterListURL: masterListURL)
+            } catch let error {
+                Log.error("Failed in isIssuingCountryInMasterlist: \(error)")
+                verificationErrors.append(error)
+            }
+
+            // 3. Can a trust chain be built from DSC to CSCA in masterlist while checking validity of certificates?
+            do {
+                self.passportCorrectlySigned = try validateAndExtractSigningCertificates(masterListURL: masterListURL, checkValidity: true)
+            } catch let error {
+                Log.error("Failed in validateAndExtractSigningCertificates without NO_CHECK_TIME: \(error)")
+                verificationErrors.append(error)
             }
         }
         
@@ -414,10 +435,8 @@ public class NFCPassportModel {
     func hasCertBeenRevoked( revocationListURL : URL ) -> Bool {
         var revoked = false
         do {
-            try validateAndExtractSigningCertificates( masterListURL: revocationListURL )
-            
             // Certificate chain found - which means certificate is on revocation list
-            revoked = true
+            revoked = try validateAndExtractSigningCertificates( masterListURL: revocationListURL, checkValidity: true)
         } catch {
             // No chain found - certificate not revoked
         }
@@ -425,9 +444,7 @@ public class NFCPassportModel {
         return revoked
     }
 
-    private func validateAndExtractSigningCertificates( masterListURL: URL ) throws {
-        self.passportCorrectlySigned = false
-        
+    private func validateAndExtractSigningCertificates(masterListURL: URL, checkValidity: Bool) throws -> Bool {
         guard let sod = getDataGroup(.SOD) else {
             throw PassiveAuthenticationError.SODMissing("No SOD found" )
         }
@@ -436,7 +453,7 @@ public class NFCPassportModel {
         let cert = try OpenSSLUtils.getX509CertificatesFromPKCS7( pkcs7Der: data ).first!
         self.certificateSigningGroups[.documentSigningCertificate] = cert
 
-        let rc = OpenSSLUtils.verifyTrustAndGetIssuerCertificate( x509:cert, CAFile: masterListURL )
+        let rc = OpenSSLUtils.verifyTrustAndGetIssuerCertificate(x509:cert, CAFile: masterListURL, checkValidity: checkValidity)
         switch rc {
         case .success(let csca):
             self.certificateSigningGroups[.issuerSigningCertificate] = csca
@@ -444,8 +461,30 @@ public class NFCPassportModel {
             throw error
         }
                 
-        Log.debug( "Passport passed SOD Verification" )
-        self.passportCorrectlySigned = true
+        Log.debug( "Trust chain found from document signer cert to CSCA with checkValidity=\(checkValidity)" )
+        return true
+    }
+
+    private func isIssuingCountryInMasterlist(masterListURL: URL) throws -> Bool {
+        guard let isoCountry = IsoCountries.find(key: issuingAuthority) else {
+            throw PassiveAuthenticationError.SODMissing("Could not find IsoCountry for issuingAuthority \(issuingAuthority)")
+        }
+
+        let certs = try OpenSSLUtils.getX509CertificatesFromPEM(PEMFile: masterListURL)
+
+        var countries = Set<String>()
+        for cert in certs {
+            if let subjectCountry = cert.getSubjectCountry() {
+                countries.insert(subjectCountry.uppercased())
+            }
+        }
+
+        let result = countries.contains(isoCountry.alpha2.uppercased())
+
+        Log.debug("Countries included in masterlist: \(countries)")
+        Log.debug("\(isoCountry.alpha2.uppercased()) is \(result ? "" : "NOT") included in masterlist")
+
+        return result
 
     }
 
