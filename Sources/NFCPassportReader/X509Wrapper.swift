@@ -124,6 +124,17 @@ public class X509Wrapper {
     public func getSubjectName() -> String? {
         return getName(for: X509_get_subject_name(cert))
     }
+
+    public func getSubjectCountry() -> String? {
+        guard let subjectName = getName(for: X509_get_subject_name(cert)),
+              let split = subjectName.components(separatedBy: "C=").last,
+              split.prefix(2).count == 2
+        else {
+            return nil
+        }
+
+        return String(split.prefix(2))
+    }
     
     private func getName( for name: OpaquePointer? ) -> String? {
         guard let name = name else { return nil }

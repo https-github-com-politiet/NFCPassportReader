@@ -88,6 +88,7 @@ extension NFCPassportReaderError: LocalizedError {
 @available(iOS 13, macOS 10.15, *)
 public enum OpenSSLError: Error {
     case UnableToGetX509CertificateFromPKCS7(String)
+    case UnableToGetX509CertificatesFromPEM(String)
     case UnableToVerifyX509CertificateForSOD(String)
     case VerifyAndReturnSODEncapsulatedData(String)
     case UnableToReadECPublicKey(String)
@@ -102,7 +103,9 @@ extension OpenSSLError: LocalizedError {
     public var errorDescription: String? {
         switch self {
             case .UnableToGetX509CertificateFromPKCS7(let reason):
-                return NSLocalizedString("Unable to read the SOD PKCS7 Certificate. \(reason)", comment: "UnableToGetPKCS7CertificateForSOD")
+                return NSLocalizedString("Unable to read the SOD PKCS7 Certificate. \(reason)", comment: "UnableToGetX509CertificateFromPKCS7")
+            case .UnableToGetX509CertificatesFromPEM(let reason):
+                return NSLocalizedString("Unable to read certificates from PEM file. \(reason)", comment: "UnableToGetX509CertificatesFromPEM")
             case .UnableToVerifyX509CertificateForSOD(let reason):
                 return NSLocalizedString("Unable to verify the SOD X509 certificate. \(reason)", comment: "UnableToVerifyX509CertificateForSOD")
             case .VerifyAndReturnSODEncapsulatedData(let reason):
