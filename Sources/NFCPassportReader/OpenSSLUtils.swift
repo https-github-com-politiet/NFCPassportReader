@@ -292,7 +292,7 @@ public class OpenSSLUtils {
         let signedAttributes = try sod.getSignedAttributes()
         let messageDigest = try sod.getMessageDigestFromSignedAttributes()
         let signature = try sod.getSignature()
-        let sigType = try sod.getSignatureAlgorithm()
+        var sigType = try sod.getSignatureAlgorithm()
         
         let pubKey = try sod.getPublicKey()
         
@@ -302,6 +302,11 @@ public class OpenSSLUtils {
         if messageDigest != mdHash {
             // Invalid - signed data hash doesn't match message digest hash
             throw OpenSSLError.VerifyAndReturnSODEncapsulatedData("messageDigest Hash doesn't hatch that of the signed attributes")
+        }
+
+        // Need to specify hash algorithm for documents with rsassapss signature algorithm
+        if sigType.lowercased() == "rsassapss" {
+            sigType = sigType + signedAttribsHashAlgo
         }
         
         // Verify signed attributes
@@ -457,7 +462,7 @@ public class OpenSSLUtils {
         
         var digest = "sha256"
         let digestType = digestType.lowercased()
-        if digestType.contains( "sha1" ) || digestType.contains( "rsassapss" ) {
+        if digestType.contains( "sha1" ) {
             digest = "sha1"
         } else if digestType.contains( "sha224" ) {
             digest = "sha224"
