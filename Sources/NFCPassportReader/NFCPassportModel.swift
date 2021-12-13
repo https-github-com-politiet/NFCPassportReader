@@ -189,6 +189,18 @@ public class NFCPassportModel {
         
     }
     
+    public init(documentNumber: String, documentType: String, documentSubType: String, issuingAuthority: String,
+                documentExpiryDate: String, dateOfBirth: String, gender: String, nationality: String) {
+        self.documentNumber = documentNumber
+        self.documentType = documentType
+        self.documentSubType = documentSubType
+        self.issuingAuthority = issuingAuthority
+        self.documentExpiryDate = documentExpiryDate
+        self.dateOfBirth = dateOfBirth
+        self.gender = gender
+        self.nationality = nationality
+    }
+    
     public init( from dump: [String:String] ) {
         var AAChallenge : [UInt8]?
         var AASignature : [UInt8]?
