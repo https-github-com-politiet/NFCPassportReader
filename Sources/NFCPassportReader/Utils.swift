@@ -47,6 +47,12 @@ extension StringProtocol {
 
 }
 
+extension String {
+    func separated(by separator: String, stride: Int) -> String {
+        return enumerated().map { $0.isMultiple(of: stride) && ($0 != 0) ? "\(separator)\($1)" : String($1) }.joined()
+    }
+}
+
 
 public func binToHexRep( _ val : [UInt8], asArray : Bool = false ) -> String {
     var string = asArray ? "[" : ""

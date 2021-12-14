@@ -6,6 +6,7 @@
 //
 
 import OpenSSL
+import Foundation
 
 @available(iOS 13, macOS 10.15, *)
 public enum CertificateType {
@@ -21,6 +22,8 @@ public enum CertificateItem : String {
     case serialNumber = "Serial number"
     case signatureAlgorithm = "Signature algorithm"
     case publicKeyAlgorithm = "Public key algorithm"
+    case authorityKeyId = "Authority Key Identifier"
+    case subjectKeyId = "Subject Key Identifier"
     case notBefore = "Valid from"
     case notAfter = "Valid to"
 }
@@ -55,6 +58,12 @@ public class X509Wrapper {
         }
         if let publicKeyAlgorithm = self.getPublicKeyAlgorithm() {
             item[.publicKeyAlgorithm] = publicKeyAlgorithm
+        }
+        if let authorityKeyId = self.getAuthorityKeyIdentifier() {
+            item[.authorityKeyId] = authorityKeyId
+        }
+        if let subjectKeyId = self.getSubjectKeyIdentifier() {
+            item[.subjectKeyId] = subjectKeyId
         }
         if let notBefore = self.getNotBeforeDate() {
             item[.notBefore] = notBefore
@@ -116,6 +125,24 @@ public class X509Wrapper {
         let algo = getAlgorithm(ptr)
         return algo
     }
+
+    public func getAuthorityKeyIdentifier() -> String? {
+        var ret: String? = nil
+        if let keyId = X509_get0_authority_key_id(cert) {
+            ret = ASN1OctetStringToString(octetString: keyId)
+        }
+
+        return ret
+    }
+
+    public func getSubjectKeyIdentifier() -> String? {
+        var ret: String? = nil
+        if let keyId = X509_get0_subject_key_id(cert) {
+            ret = ASN1OctetStringToString(octetString: keyId)
+        }
+
+        return ret
+    }
     
     public func getIssuerName() -> String? {
         return getName(for: X509_get_issuer_name(cert))
@@ -174,6 +201,25 @@ public class X509Wrapper {
         
         ASN1_TIME_print(b, date)
         return OpenSSLUtils.bioToString(bio: b)
+    }
+
+    private func ASN1OctetStringToString(octetString: UnsafePointer<ASN1_OCTET_STRING>) -> String? {
+        guard let b = BIO_new(BIO_s_mem()) else { return nil }
+        defer { BIO_free(b) }
+
+        ASN1_STRING_print_ex(b, octetString, UInt(
+            ASN1_STRFLGS_ESC_2253 |
+            ASN1_STRFLGS_ESC_CTRL |
+            ASN1_STRFLGS_ESC_MSB |
+            ASN1_STRFLGS_UTF8_CONVERT |
+            ASN1_STRFLGS_DUMP_ALL))
+
+        let str = OpenSSLUtils.bioToString(bio: b)
+            .components(separatedBy: CharacterSet.alphanumerics.inverted)
+            .joined()
+            .separated(by: ":", stride: 2)
+
+        return str
     }
     
 }
