@@ -292,7 +292,7 @@ public class OpenSSLUtils {
         let signedAttributes = try sod.getSignedAttributes()
         let messageDigest = try sod.getMessageDigestFromSignedAttributes()
         let signature = try sod.getSignature()
-        var sigType = try sod.getSignatureAlgorithm()
+        let sigType = try sod.getSignatureAlgorithm()
         
         let pubKey = try sod.getPublicKey()
         
@@ -304,14 +304,30 @@ public class OpenSSLUtils {
             throw OpenSSLError.VerifyAndReturnSODEncapsulatedData("messageDigest Hash doesn't hatch that of the signed attributes")
         }
 
+        var digestType = sigType
         // Need to specify hash algorithm for documents with rsassapss signature algorithm
         if sigType.lowercased() == "rsassapss" {
-            sigType = sigType + signedAttribsHashAlgo
+            digestType = sigType + signedAttribsHashAlgo
         }
-        
+
+        var result = false
+
         // Verify signed attributes
-        if  !verifySignature( data : [UInt8](signedAttributes), signature : [UInt8](signature), pubKey : pubKey, digestType: sigType ) {
-            
+        result = verifySignature(data: [UInt8](signedAttributes),
+                                 signature: [UInt8](signature),
+                                 pubKey: pubKey,
+                                 digestType: digestType)
+
+        // Fallback for failing rsassapss signature algorithms (sha1 is default for rsassapss)
+        if (!result && sigType.lowercased() == "rsassapss") {
+            digestType = sigType + "sha1"
+            result = verifySignature(data: [UInt8](signedAttributes),
+                                     signature: [UInt8](signature),
+                                     pubKey: pubKey,
+                                     digestType: digestType)
+        }
+
+        if  !result {
             throw OpenSSLError.VerifyAndReturnSODEncapsulatedData("Unable to verify signature for signed attributes")
         }
         
