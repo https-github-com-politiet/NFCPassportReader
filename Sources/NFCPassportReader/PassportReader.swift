@@ -511,7 +511,7 @@ extension PassportReader {
                 } else if errMsg == "Security status not satisfied" || errMsg == "File not found" {
                     // Can't read this element as we aren't allowed - remove it and return out so we re-do BAC
                     self.dataGroupsToRead.removeFirst()
-                    completed(nil)
+                    self.readNextDataGroup(completedReadingGroups: completed)
                 } else if errMsg == "SM data objects incorrect" || errMsg == "Class not supported" {
                     // Can't read this element security objects now invalid - and return out so we re-do BAC
                     completed(nil)
