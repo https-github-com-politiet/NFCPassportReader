@@ -108,11 +108,12 @@ public class NFCPassportModel {
     public internal(set) var chipAuthenticationStatus : PassportAuthenticationStatus = .notDone
     public internal(set) var activeAuthenticationStatus : PassportAuthenticationStatus = .notDone
 
-    public private(set) var passportCorrectlySigned : Bool = false
-    public private(set) var trustChainBuiltWithoutTime : Bool = false
-    public private(set) var issuingCountryIsInML : Bool = false
-    public private(set) var documentSigningCertificateVerified : Bool = false
-    public private(set) var passportDataNotTampered : Bool = false
+    public internal(set) var passportCorrectlySigned : Bool = false
+    public internal(set) var trustChainBuiltWithoutTime : Bool = false
+    public internal(set) var issuingCountryIsInML : Bool = false
+    public internal(set) var documentSigningCertificateVerified : Bool = false
+    public internal(set) var passportDataNotTampered : Bool = false
+    
     public private(set) var activeAuthenticationChallenge : [UInt8] = []
     public private(set) var activeAuthenticationSignature : [UInt8] = []
     public private(set) var verificationErrors : [Error] = []
