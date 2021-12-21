@@ -113,7 +113,7 @@ public class TagReader {
         
         let data = oidBytes + keyTypeBytes
             
-        let cmd = NFCISO7816APDU(instructionClass: 00, instructionCode: 0x22, p1Parameter: 0xC1, p2Parameter: 0xA4, data: Data(data), expectedResponseLength: 256)
+        let cmd = NFCISO7816APDU(instructionClass: 00, instructionCode: 0x22, p1Parameter: 0xC1, p2Parameter: 0xA4, data: Data(data), expectedResponseLength: -1)
         
         send( cmd: cmd, completed: completed )
     }
