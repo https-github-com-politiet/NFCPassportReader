@@ -41,10 +41,6 @@ public class PassportReader : NSObject {
     private var masterListURL : URL?
     private var shouldNotReportNextReaderSessionInvalidationErrorUserCanceled : Bool = false
 
-    // By default, Passive Authentication uses the new RFS5652 method to verify the SOD, but can be switched to use
-    // the previous OpenSSL CMS verification if necessary
-    public var passiveAuthenticationUsesOpenSSL : Bool = false
-
 //    public init( logLevel: LogLevel = .info, masterListURL: URL? = nil ) {
 //        super.init()
 //
@@ -346,7 +342,7 @@ extension PassportReader {
                         self?.readerSession?.invalidate()
                         
                         // If we have a masterlist url set then use that and verify the passport now
-                        self?.passport.verifyPassport(masterListURL: self?.masterListURL, useCMSVerification: self?.passiveAuthenticationUsesOpenSSL ?? false)
+                        self?.passport.verifyPassport(masterListURL: self?.masterListURL)
                         self?.scanCompletedHandler( self?.passport, nil )
                     }
                 }

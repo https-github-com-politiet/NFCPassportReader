@@ -304,12 +304,13 @@ public class NFCPassportModel {
     /// Part 2 - 2. Has it been tampered with (e.g. computed hashes of Datagroups do not match those in the SOD)?
     ///
     /// - Parameter masterListURL: the path to the masterlist to try to verify the document signing certiifcate in the SOD
-    /// - Parameter useCMSVerification: Should we use OpenSSL CMS verification to verify the SOD content
+    ///
+    /// - Deprecated Parameter useCMSVerification: Should we use OpenSSL CMS verification to verify the SOD content
     ///         is correctly signed by the document signing certificate OR should we do this manully based on RFC5652
     ///         CMS fails under certain circumstances (e.g. hashes are SHA512 whereas content is signed with SHA256RSA).
     ///         Currently defaulting to manual verification - hoping this will replace the CMS verification totally
     ///         CMS Verification currently there just in case
-    public func verifyPassport( masterListURL: URL?, useCMSVerification : Bool = false ) {
+    public func verifyPassport(masterListURL: URL?) {
         if let masterListURL = masterListURL {
             // 1. Can a trust chain be built from DSC to CSCA in masterlist *without* checking validity of certificates?
             do {
@@ -343,7 +344,7 @@ public class NFCPassportModel {
         }
         
         do {
-            try ensureReadDataNotBeenTamperedWith( useCMSVerification : useCMSVerification )
+            try ensureReadDataNotBeenTamperedWith()
         } catch let error {
             Log.error("Failed to verify if data has been tampered with", error)
             verificationErrors.append( error )
@@ -497,7 +498,7 @@ public class NFCPassportModel {
 
     }
 
-    private func ensureReadDataNotBeenTamperedWith( useCMSVerification: Bool ) throws  {
+    private func ensureReadDataNotBeenTamperedWith() throws  {
         guard let sod = getDataGroup(.SOD) as? SOD else {
             throw PassiveAuthenticationError.SODMissing("No SOD found" )
         }

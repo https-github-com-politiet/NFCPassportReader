@@ -144,7 +144,7 @@ extension MainView {
         passportReader.setMasterListURL( masterListURL )
         
         // Set whether to use the new Passive Authentication verification method (default true) or the old OpenSSL CMS verifiction
-        passportReader.passiveAuthenticationUsesOpenSSL = !settings.useNewVerificationMethod
+        // passportReader.passiveAuthenticationUsesOpenSSL = !settings.useNewVerificationMethod
 
         // If we want to read only specific data groups we can using:
 //        let dataGroups : [DataGroupId] = [.COM, .SOD, .DG1, .DG2, .DG7, .DG11, .DG12, .DG14, .DG15]
