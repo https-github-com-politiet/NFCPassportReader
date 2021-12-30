@@ -53,7 +53,7 @@ class ChipAuthenticationHandler {
         
         self.completedHandler = completed
         
-        Log.info( "Performing Chip Authentication - number of public keys found - \(chipAuthPublicKeyInfos.count)" )
+        Log.info("Performing Chip Authentication - number of public keys found - \(chipAuthPublicKeyInfos.count)")
         guard isChipAuthenticationSupported else {
             completed( false )
             return
@@ -91,7 +91,7 @@ class ChipAuthenticationHandler {
             // For each public key, do chipauth
             try self.doCA( keyId: keyId, encryptionDetailsOID: chipAuthInfoOID, publicKey: chipAuthPublicKeyInfo.pubKey, completed: { [unowned self] (success) in
                 
-                Log.info("Finished Chip Authentication - success - \(success)")
+                Log.info("Finished Chip Authentication", metadata: ["result": "\(success)"])
                 if !success {
                     self.doChipAuthenticationForNextPublicKey()
                 } else {
@@ -99,7 +99,7 @@ class ChipAuthenticationHandler {
                 }
             })
         } catch {
-            Log.error( "ERROR! - \(error)" )
+            Log.error("Error doing chip authentication", error)
             doChipAuthenticationForNextPublicKey()
 
         }
@@ -134,12 +134,12 @@ class ChipAuthenticationHandler {
         try sendPublicKey(oid: oid, keyId: keyId, pcdPublicKey: ephemeralKeyPair!, completed: { [unowned self] (response, err) in
             
             if let error = err {
-                print( "ERROR! - \(error.localizedDescription)" )
+                Log.error("Error sending CA public key to PICC", error)
                 completed(false)
                 return
             }
             
-            Log.debug( "Public Key successfully sent to passport!" )
+            Log.debug("Public Key successfully sent to passport!")
             
             // Use our ephemeral private key and the passports public key to generate a shared secret
             // (the passport with do the same thing with their private key and our public key)
@@ -150,7 +150,7 @@ class ChipAuthenticationHandler {
                 try restartSecureMessaging( oid : oid, sharedSecret : sharedSecret, maxTranceiveLength : 1, shouldCheckMAC : true)
                 completed(true)
             } catch {
-                Log.error( "Failed to restart secure messaging - \(error)" )
+                Log.error("Failed to restart secure messaging", error)
                 completed(false)
             }
         })
@@ -218,15 +218,15 @@ class ChipAuthenticationHandler {
         
         let ssc = withUnsafeBytes(of: 0.bigEndian, Array.init)
         if (cipherAlg.hasPrefix("DESede")) {
-            Log.info( "Restarting secure messaging using DESede encryption")
+            Log.info("Restarting secure messaging using DESede encryption")
             let sm = SecureMessaging(encryptionAlgorithm: .DES, ksenc: ksEnc, ksmac: ksMac, ssc: ssc)
             tagReader?.secureMessaging = sm
         } else if (cipherAlg.hasPrefix("AES")) {
-            Log.info( "Restarting secure messaging using AES encryption")
+            Log.info("Restarting secure messaging using AES encryption")
             let sm = SecureMessaging(encryptionAlgorithm: .AES, ksenc: ksEnc, ksmac: ksMac, ssc: ssc)
             tagReader?.secureMessaging = sm
         } else {
-            Log.error( "Not restarting secure messaging as unsupported cipher algorithm requested - \(cipherAlg)")
+            Log.error("Not restarting secure messaging as unsupported cipher algorithm requested - \(cipherAlg)")
             throw NFCPassportReaderError.InvalidDataPassed("Unsupported cipher algorithm \(cipherAlg)" )
         }
     }

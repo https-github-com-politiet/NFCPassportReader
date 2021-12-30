@@ -200,7 +200,6 @@ public class TagReader {
             
             // Read first 4 bytes of header to see how big the data structure is
             let data : [UInt8] = [0x00, 0xB0, 0x00, 0x00, 0x00, 0x00,0x04]
-            //print( "--------------------------------------\nSending \(binToHexRep(data))" )
             let cmd = NFCISO7816APDU(data:Data(data))!
             self.send( cmd: cmd ) { [unowned self] (resp,err) in
                 guard let response = resp else {
@@ -216,7 +215,6 @@ public class TagReader {
                 leftToRead = Int(len)
                 let offset = o + 1
                 
-                //print( "Got \(binToHexRep(response.data)) which is \(leftToRead) bytes with offset \(o)" )
                 self.header = [UInt8](response.data[..<offset])//response.data
 
                 Log.debug( "TagReader - Number of data bytes to read - \(leftToRead)" )
@@ -341,7 +339,7 @@ public class TagReader {
 
         tag.sendCommand(apdu: toSend) { [unowned self] (data, sw1, sw2, error) in
             if let error = error {
-                Log.error( "TagReader - Error reading tag - \(error.localizedDescription))" )
+                Log.error( "TagReader - Error reading tag", error )
                 completed( nil, NFCPassportReaderError.ResponseError( error.localizedDescription, sw1, sw2 ) )
             } else {
                 Log.verbose( "TagReader - Received response" )
@@ -350,29 +348,35 @@ public class TagReader {
                 if let sm = self.secureMessaging {
                     do {
                         rep = try sm.unprotect(rapdu:rep)
-                        Log.verbose(String(format:"TagReader [SM - unprotected] \(binToHexRep(rep.data, asArray:true)), sw1:0x%02x sw2:0x%02x", rep.sw1, rep.sw2) )
+                        Log.verbose("\(String(format:"TagReader [SM - unprotected] \(binToHexRep(rep.data, asArray:true)), sw1:0x%02x sw2:0x%02x", rep.sw1, rep.sw2))")
                     } catch {
                         completed( nil, NFCPassportReaderError.UnableToUnprotectAPDU )
                         return
                     }
                 } else {
-                    Log.verbose(String(format:"TagReader [unprotected] \(binToHexRep(rep.data, asArray:true)), sw1:0x%02x sw2:0x%02x", rep.sw1, rep.sw2) )
+                    Log.verbose("\(String(format:"TagReader [unprotected] \(binToHexRep(rep.data, asArray:true)), sw1:0x%02x sw2:0x%02x", rep.sw1, rep.sw2))")
 
                 }
                 
                 if rep.sw1 == 0x90 && rep.sw2 == 0x00 {
                     completed( rep, nil )
                 } else {
-                    Log.error( "Error reading tag: sw1 - 0x\(binToHexRep(sw1)), sw2 - 0x\(binToHexRep(sw2))" )
+                    let errorMsg = self.decodeError(sw1: rep.sw1, sw2: rep.sw2)
+                    let (sw1rep, sw2rep) = ("0x\(binToHexRep(sw1))", "0x\(binToHexRep(sw2))")
+                    Log.error("Error reading tag: sw1 - \(sw1rep), sw2 - \(sw2rep)", metadata: [
+                        "sw1": "\(sw1rep)",
+                        "sw2": "\(sw2rep)",
+                        "decoded-error": "\(errorMsg)"
+                    ])
+
                     let tagError: NFCPassportReaderError
                     if (rep.sw1 == 0x63 && rep.sw2 == 0x00) {
                         tagError = NFCPassportReaderError.InvalidMRZKey
                     } else {
-                        let errorMsg = self.decodeError(sw1: rep.sw1, sw2: rep.sw2)
-                        Log.error( "reason: \(errorMsg)" )
-                        tagError = NFCPassportReaderError.ResponseError( errorMsg, sw1, sw2 )
+                        tagError = NFCPassportReaderError.ResponseError(errorMsg, sw1, sw2)
                     }
-                    completed( nil, tagError)
+                    
+                    completed(nil, tagError)
                 }
             }
         }

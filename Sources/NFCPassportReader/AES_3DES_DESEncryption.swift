@@ -57,7 +57,7 @@ public func AESEncrypt(key:[UInt8], message:[UInt8], iv:[UInt8]) -> [UInt8] {
         
         return [UInt8](cryptData)
     } else {
-        Log.error("AES Encrypt Error: \(cryptStatus)")
+        Log.error("AES Encrypt Error - \(cryptStatus)")
     }
     return []
 }
@@ -110,7 +110,7 @@ public func AESDecrypt(key:[UInt8], message:[UInt8], iv:[UInt8]) -> [UInt8] {
         
         return [UInt8](cryptData)
     } else {
-        Log.error("AES Decrypt Error: \(cryptStatus)")
+        Log.error("AES Decrypt Error - \(cryptStatus)")
     }
     return []
 }
@@ -159,7 +159,7 @@ public func AESECBEncrypt(key:[UInt8], message:[UInt8]) -> [UInt8] {
         
         return [UInt8](cryptData)
     } else {
-        Log.error("AESECBEncrypt Error: \(cryptStatus)")
+        Log.error("AESECBEncrypt Error - \(cryptStatus)")
     }
     return []
 }
@@ -214,7 +214,7 @@ public func tripleDESEncrypt(key:[UInt8], message:[UInt8], iv:[UInt8]) -> [UInt8
         
         return [UInt8](cryptData)
     } else {
-        Log.error("Error: \(cryptStatus)")
+        Log.error("3DES Encrypt Error - \(cryptStatus)")
     }
     return []
 }
@@ -267,7 +267,7 @@ public func tripleDESDecrypt(key:[UInt8], message:[UInt8], iv:[UInt8]) -> [UInt8
         
         return [UInt8](cryptData)
     } else {
-        Log.error("Error: \(cryptStatus)")
+        Log.error("3DES Decrypt Error - \(cryptStatus)")
     }
     return []
 }
@@ -319,7 +319,7 @@ public func DESEncrypt(key:[UInt8], message:[UInt8], iv:[UInt8], options:UInt32 
         
         return [UInt8](cryptData)
     } else {
-        Log.error("Error: \(cryptStatus)")
+        Log.error("DES Encrypt Error - \(cryptStatus)")
     }
     return []
 }
@@ -370,7 +370,7 @@ public func DESDecrypt(key:[UInt8], message:[UInt8], iv:[UInt8], options:UInt32 
         
         return [UInt8](cryptData)
     } else {
-        Log.error("Error: \(cryptStatus)")
+        Log.error("DES Decrypt Error - \(cryptStatus)")
     }
     return []
 }

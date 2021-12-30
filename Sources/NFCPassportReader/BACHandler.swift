@@ -39,11 +39,11 @@ public class BACHandler {
             return
         }
         
-        Log.debug( "BACHandler - deriving Document Basic Access Keys" )
+        Log.debug("BACHandler - deriving Document Basic Access Keys")
         do {
             _ = try self.deriveDocumentBasicAccessKeys(mrz: mrzKey)
         } catch {
-            Log.error( "ERROR - \(error.localizedDescription)" )
+            Log.error("Error deriving Document Basic Access Keys", error)
             completed( NFCPassportReaderError.InvalidDataPassed("Unable to derive BAC Keys - \(error.localizedDescription)") )
             return
 
@@ -53,25 +53,25 @@ public class BACHandler {
         tagReader.secureMessaging = nil
         
         // get Challenge
-        Log.debug( "BACHandler - Getting initial challenge" )
+        Log.debug("BACHandler - Getting initial challenge")
         tagReader.getChallenge() { [unowned self] (response, error) in
             
             guard let response = response else {
-                Log.error( "ERROR - \(error?.localizedDescription ?? "")" )
+                Log.error("BACHandler - error getting initial challenge - \(error?.localizedDescription ?? "")" )
                 completed( error )
                 return
             }
-            Log.verbose( "DATA - \(response.data)" )
+            Log.verbose( "BACHandler initial challenge data - \(response.data)" )
             
             Log.debug( "BACHandler - Doing mutual authentication" )
             let cmd_data = self.authentication(rnd_icc: [UInt8](response.data))
             tagReader.doMutualAuthentication(cmdData: Data(cmd_data)) { [unowned self] (response, error) in
                 guard let response = response else {
-                    Log.error( "ERROR - \(error?.localizedDescription ?? "")" )
+                    Log.error("BACHandler - error doing mutual authentication - \(error?.localizedDescription ?? "")" )
                     completed( error )
                     return
                 }
-                Log.verbose( "DATA - \(response.data)" )
+                Log.verbose( "BACHandler mutual authentication data - \(response.data)" )
                 
                 do {
                     let (KSenc, KSmac, ssc) = try self.sessionKeys(data: [UInt8](response.data))
@@ -79,7 +79,7 @@ public class BACHandler {
                     Log.debug( "BACHandler - complete" )
                     completed( nil)
                 } catch {
-                    Log.error( "ERROR - \(error.localizedDescription)" )
+                    Log.error("Unable to derive BAC keys", error)
                     completed( NFCPassportReaderError.InvalidDataPassed("Unable to derive BAC Keys - \(error.localizedDescription)") )
                 }
             }
@@ -140,7 +140,7 @@ public class BACHandler {
         self.rnd_icc = rnd_icc
         
         Log.verbose("Request an 8 byte random number from the MRTD's chip")
-        Log.verbose("\tRND.ICC: " + binToHexRep(self.rnd_icc))
+        Log.verbose("\tRND.ICC: \(binToHexRep(self.rnd_icc))")
         
         self.rnd_icc = rnd_icc
 

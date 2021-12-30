@@ -220,7 +220,7 @@ public class NFCPassportModel {
                         let dgId = DataGroupId.getIDFromName(name:key)
                         self.addDataGroup( dgId, dataGroup:dg )
                     } catch {
-                        Log.error("Failed to import Datagroup - \(key) from dump - \(error)" )
+                        Log.error("Failed to import Datagroup \(key) from dump", error)
                     }
                 }
             }
@@ -315,7 +315,9 @@ public class NFCPassportModel {
             do {
                 self.trustChainBuiltWithoutTime = try validateAndExtractSigningCertificates(masterListURL: masterListURL, checkValidity: false)
             } catch let error {
-                Log.error("Failed in validateAndExtractSigningCertificates with NO_CHECK_TIME: \(error)")
+                Log.info("Failed to build trust chain without validity constraint", metadata: [
+                    "reason": "\(error)"
+                ])
                 verificationErrors.append( error )
             }
 
@@ -323,7 +325,9 @@ public class NFCPassportModel {
             do {
                 self.issuingCountryIsInML = try isIssuingCountryInMasterlist(masterListURL: masterListURL)
             } catch let error {
-                Log.error("Failed in isIssuingCountryInMasterlist: \(error)")
+                Log.info("Failed in isIssuingCountryInMasterlist", metadata: [
+                    "reason": "\(error)"
+                ])
                 verificationErrors.append(error)
             }
 
@@ -331,7 +335,9 @@ public class NFCPassportModel {
             do {
                 self.passportCorrectlySigned = try validateAndExtractSigningCertificates(masterListURL: masterListURL, checkValidity: true)
             } catch let error {
-                Log.error("Failed in validateAndExtractSigningCertificates without NO_CHECK_TIME: \(error)")
+                Log.info("Failed to build trust chain with validity constraint", metadata: [
+                    "reason": "\(error)"
+                ])
                 verificationErrors.append(error)
             }
         }
@@ -339,7 +345,7 @@ public class NFCPassportModel {
         do {
             try ensureReadDataNotBeenTamperedWith( useCMSVerification : useCMSVerification )
         } catch let error {
-            Log.error("Failed in ensureReadDataNotBeenTamperedWith: \(error)")
+            Log.error("Failed to verify if data has been tampered with", error)
             verificationErrors.append( error )
         }
     }
@@ -393,6 +399,8 @@ public class NFCPassportModel {
                         Log.error( "Error identifying Active Authentication RSA message digest hash algorithm" )
                         return
                 }
+
+                Log.debug("Active Authentication RSA key uses hashtype \(hashType) and hashLength \(hashLength)")
                 
                 let message = [UInt8](decryptedSig[1 ..< (decryptedSig.count-hashLength)])
                 let digest = [UInt8](decryptedSig[(decryptedSig.count-hashLength)...])
@@ -411,7 +419,7 @@ public class NFCPassportModel {
                     Log.error( "Error verifying Active Authentication RSA signature - Hash doesn't match" )
                 }
             } catch {
-                Log.error( "Error verifying Active Authentication RSA signature - \(error)" )
+                Log.error("Error verifying Active Authentication RSA signature", error)
             }
         } else if let ecdsaPublicKey = dg15.ecdsaPublicKey {
             var digestType = ""
@@ -501,14 +509,16 @@ public class NFCPassportModel {
             signedData = try OpenSSLUtils.verifyAndReturnSODEncapsulatedData(sod: sod)
             documentSigningCertificateVerified = true
         } catch {
-            Log.debug("Error verifying document signing certificate using RFS5652 method - \(error)")
+            Log.debug("Could not verify document signing certificate using RFS5652 method", metadata: [
+                "reason": "\(error)"
+            ])
             Log.debug("Trying to verify document signing certificate using OpenSSL CMS method...")
 
             do {
                 signedData = try OpenSSLUtils.verifyAndReturnSODEncapsulatedDataUsingCMS(sod: sod)
                 documentSigningCertificateVerified = true
             } catch {
-                Log.error("Error verifying document signing certificate - \(error)")
+                Log.error("Error verifying document signing certificate", error)
                 signedData = try sod.getEncapsulatedContent()
             }
         }
