@@ -22,29 +22,65 @@ public struct Log {
         }
     }
 
-    static func verbose(_ message: Logger.Message, metadata: Logger.Metadata? = nil) {
-        sharedInstance.trace(message, metadata: metadata)
+    static func verbose(
+        _ message: Logger.Message,
+        metadata: Logger.Metadata? = nil,
+        file: String = #fileID,
+        function: String = #function,
+        line: UInt = #line
+    ) {
+        sharedInstance.trace(message, metadata: metadata, file: file, function: function, line: line)
     }
 
-    static func debug(_ message: Logger.Message, metadata: Logger.Metadata? = nil) {
-        sharedInstance.debug(message, metadata: metadata)
+    static func debug(
+        _ message: Logger.Message,
+        metadata: Logger.Metadata? = nil,
+        file: String = #fileID,
+        function: String = #function,
+        line: UInt = #line
+    ) {
+        sharedInstance.debug(message, metadata: metadata, file: file, function: function, line: line)
     }
 
-    static func info(_ message: Logger.Message, metadata: Logger.Metadata? = nil) {
-        sharedInstance.info(message, metadata: metadata)
+    static func info(
+        _ message: Logger.Message,
+        metadata: Logger.Metadata? = nil,
+        file: String = #fileID,
+        function: String = #function,
+        line: UInt = #line
+    ) {
+        sharedInstance.info(message, metadata: metadata, file: file, function: function, line: line)
     }
 
-    static func warning(_ message: Logger.Message, metadata: Logger.Metadata? = nil) {
-        sharedInstance.warning(message, metadata: metadata)
+    static func warning(
+        _ message: Logger.Message,
+        metadata: Logger.Metadata? = nil,
+        file: String = #fileID,
+        function: String = #function,
+        line: UInt = #line
+    ) {
+        sharedInstance.warning(message, metadata: metadata, file: file, function: function, line: line)
     }
 
-    static func error(_ message: Logger.Message, metadata: Logger.Metadata? = nil) {
-        sharedInstance.error(message, metadata: metadata)
+    static func error(
+        _ message: Logger.Message,
+        metadata: Logger.Metadata? = nil,
+        file: String = #fileID,
+        function: String = #function,
+        line: UInt = #line
+    ) {
+        sharedInstance.error(message, metadata: metadata, file: file, function: function, line: line)
     }
 
-    static func error(_ message: Logger.Message, _ error: Error) {
+    static func error(
+        _ message: Logger.Message,
+        _ error: Error,
+        file: String = #fileID,
+        function: String = #function,
+        line: UInt = #line
+    ) {
         let metadata: Logger.Metadata = ["error": "\(error)"]
-        sharedInstance.error(message, metadata: metadata)
+        sharedInstance.error(message, metadata: metadata, file: file, function: function, line: line)
     }
 }
 
