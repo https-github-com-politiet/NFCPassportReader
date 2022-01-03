@@ -415,7 +415,7 @@ public class NFCPassportModel {
                 // Check hashes match
                 if msgHash == digest {
                     self.activeAuthenticationStatus = .success
-                    Log.debug( "Active Authentication (RSA) successful" )
+                    Log.info( "Active Authentication (RSA) successful" )
                 } else {
                     Log.error( "Error verifying Active Authentication RSA signature - Hash doesn't match" )
                 }
@@ -431,7 +431,7 @@ public class NFCPassportModel {
 
             if OpenSSLUtils.verifyECDSASignature( publicKey:ecdsaPublicKey, signature: signature, data: challenge, digestType: digestType ) {
                 self.activeAuthenticationStatus = .success
-                Log.debug( "Active Authentication (ECDSA) successful" )
+                Log.info( "Active Authentication (ECDSA) successful" )
             } else {
                 Log.error( "Error verifying Active Authentication ECDSA signature" )
             }
@@ -471,7 +471,7 @@ public class NFCPassportModel {
             throw error
         }
                 
-        Log.debug( "Trust chain found from document signer cert to CSCA with checkValidity=\(checkValidity)" )
+        Log.info( "Trust chain found from document signer cert to CSCA with checkValidity=\(checkValidity)" )
         return true
     }
 
@@ -492,7 +492,7 @@ public class NFCPassportModel {
         let result = countries.contains(isoCountry.alpha2.uppercased())
 
         Log.debug("Countries included in masterlist: \(countries)")
-        Log.debug("\(isoCountry.alpha2.uppercased()) is \(result ? "" : "NOT") included in masterlist")
+        Log.info("\(isoCountry.alpha2.uppercased()) is \(result ? "" : "NOT") included in masterlist")
 
         return result
 
@@ -509,8 +509,9 @@ public class NFCPassportModel {
         do {
             signedData = try OpenSSLUtils.verifyAndReturnSODEncapsulatedData(sod: sod)
             documentSigningCertificateVerified = true
+            Log.info("Verified document signing certificate using RFS5652 method")
         } catch {
-            Log.debug("Could not verify document signing certificate using RFS5652 method", metadata: [
+            Log.warning("Could not verify document signing certificate using RFS5652 method", metadata: [
                 "reason": "\(error)"
             ])
             Log.debug("Trying to verify document signing certificate using OpenSSL CMS method...")
@@ -518,8 +519,9 @@ public class NFCPassportModel {
             do {
                 signedData = try OpenSSLUtils.verifyAndReturnSODEncapsulatedDataUsingCMS(sod: sod)
                 documentSigningCertificateVerified = true
+                Log.info("Verified document signing certificate using OpenSSL CMS method")
             } catch {
-                Log.error("Error verifying document signing certificate", error)
+                Log.error("Could not verify document signing certificate using OpenSSL CMS method", error)
                 signedData = try sod.getEncapsulatedContent()
             }
         }

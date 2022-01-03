@@ -68,9 +68,9 @@ public class PACEInfo : SecurityInfo {
         self.parameterId = parameterId
 
         Log.info("Found PACEInfo", metadata: [
-            "pace-oid": "\(oid)",
-            "pace-version": "\(version)",
-            "pace-parameter-id": "\(parameterId ?? -1)"
+            "paceOid": "\(oid)",
+            "paceVersion": "\(version)",
+            "paceParameterId": "\(parameterId ?? -1)"
         ])
     }
     

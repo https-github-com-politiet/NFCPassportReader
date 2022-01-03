@@ -366,7 +366,7 @@ public class TagReader {
                     Log.error("Error reading tag: sw1 - \(sw1rep), sw2 - \(sw2rep)", metadata: [
                         "sw1": "\(sw1rep)",
                         "sw2": "\(sw2rep)",
-                        "decoded-error": "\(errorMsg)"
+                        "decodedError": "\(errorMsg)"
                     ])
 
                     let tagError: NFCPassportReaderError

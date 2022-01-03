@@ -31,9 +31,9 @@ public class ChipAuthenticationInfo : SecurityInfo {
         self.keyId = keyId
 
         Log.info("Found ChipAuthenticationInfo", metadata: [
-            "ca-oid": "\(oid)",
-            "ca-version": "\(version)",
-            "ca-key-id": "\(keyId ?? -1)"
+            "caOid": "\(oid)",
+            "caVersion": "\(version)",
+            "caKeyId": "\(keyId ?? -1)"
         ])
     }
     

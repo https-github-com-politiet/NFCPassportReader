@@ -24,9 +24,9 @@ public class ActiveAuthenticationInfo : SecurityInfo {
         self.signatureAlgorithmOID = signatureAlgorithmOID
 
         Log.info("Found ActiveAuthenticationInfo", metadata: [
-            "aa-oid": "\(oid)",
-            "aa-version": "\(version)",
-            "aa-signature-algorithm-oid": "\(signatureAlgorithmOID ?? "")"
+            "aaOid": "\(oid)",
+            "aaVersion": "\(version)",
+            "aaSignatureAlgorithmOid": "\(signatureAlgorithmOID ?? "")"
         ])
     }
 

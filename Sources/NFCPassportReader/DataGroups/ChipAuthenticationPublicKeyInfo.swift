@@ -25,8 +25,8 @@ public class ChipAuthenticationPublicKeyInfo : SecurityInfo {
         self.keyId = keyId
 
         Log.info("Found ChipAuthenticationPublicKeyInfo", metadata: [
-            "capki-oid": "\(oid)",
-            "capki-key-id": "\(keyId ?? -1)"
+            "capkiOid": "\(oid)",
+            "capkiKeyId": "\(keyId ?? -1)"
         ])
     }
     
