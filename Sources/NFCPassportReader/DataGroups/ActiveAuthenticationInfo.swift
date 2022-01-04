@@ -22,6 +22,12 @@ public class ActiveAuthenticationInfo : SecurityInfo {
         self.oid = oid
         self.version = version
         self.signatureAlgorithmOID = signatureAlgorithmOID
+
+        Log.info("Found ActiveAuthenticationInfo", metadata: [
+            "aaOid": "\(oid)",
+            "aaVersion": "\(version)",
+            "aaSignatureAlgorithmOid": "\(signatureAlgorithmOID ?? "")"
+        ])
     }
 
     public override func getObjectIdentifier() -> String {

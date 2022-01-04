@@ -220,7 +220,7 @@ public class NFCPassportModel {
                         let dgId = DataGroupId.getIDFromName(name:key)
                         self.addDataGroup( dgId, dataGroup:dg )
                     } catch {
-                        Log.error("Failed to import Datagroup - \(key) from dump - \(error)" )
+                        Log.error("Failed to import Datagroup \(key) from dump", error)
                     }
                 }
             }
@@ -304,18 +304,21 @@ public class NFCPassportModel {
     /// Part 2 - 2. Has it been tampered with (e.g. computed hashes of Datagroups do not match those in the SOD)?
     ///
     /// - Parameter masterListURL: the path to the masterlist to try to verify the document signing certiifcate in the SOD
-    /// - Parameter useCMSVerification: Should we use OpenSSL CMS verification to verify the SOD content
+    ///
+    /// - Deprecated Parameter useCMSVerification: Should we use OpenSSL CMS verification to verify the SOD content
     ///         is correctly signed by the document signing certificate OR should we do this manully based on RFC5652
     ///         CMS fails under certain circumstances (e.g. hashes are SHA512 whereas content is signed with SHA256RSA).
     ///         Currently defaulting to manual verification - hoping this will replace the CMS verification totally
     ///         CMS Verification currently there just in case
-    public func verifyPassport( masterListURL: URL?, useCMSVerification : Bool = false ) {
+    public func verifyPassport(masterListURL: URL?) {
         if let masterListURL = masterListURL {
             // 1. Can a trust chain be built from DSC to CSCA in masterlist *without* checking validity of certificates?
             do {
                 self.trustChainBuiltWithoutTime = try validateAndExtractSigningCertificates(masterListURL: masterListURL, checkValidity: false)
             } catch let error {
-                Log.error("Failed in validateAndExtractSigningCertificates with NO_CHECK_TIME: \(error)")
+                Log.info("Failed to build trust chain without validity constraint", metadata: [
+                    "reason": "\(error)"
+                ])
                 verificationErrors.append( error )
             }
 
@@ -323,7 +326,9 @@ public class NFCPassportModel {
             do {
                 self.issuingCountryIsInML = try isIssuingCountryInMasterlist(masterListURL: masterListURL)
             } catch let error {
-                Log.error("Failed in isIssuingCountryInMasterlist: \(error)")
+                Log.info("Failed in isIssuingCountryInMasterlist", metadata: [
+                    "reason": "\(error)"
+                ])
                 verificationErrors.append(error)
             }
 
@@ -331,15 +336,17 @@ public class NFCPassportModel {
             do {
                 self.passportCorrectlySigned = try validateAndExtractSigningCertificates(masterListURL: masterListURL, checkValidity: true)
             } catch let error {
-                Log.error("Failed in validateAndExtractSigningCertificates without NO_CHECK_TIME: \(error)")
+                Log.info("Failed to build trust chain with validity constraint", metadata: [
+                    "reason": "\(error)"
+                ])
                 verificationErrors.append(error)
             }
         }
         
         do {
-            try ensureReadDataNotBeenTamperedWith( useCMSVerification : useCMSVerification )
+            try ensureReadDataNotBeenTamperedWith()
         } catch let error {
-            Log.error("Failed in ensureReadDataNotBeenTamperedWith: \(error)")
+            Log.error("Failed to verify if data has been tampered with", error)
             verificationErrors.append( error )
         }
     }
@@ -393,6 +400,8 @@ public class NFCPassportModel {
                         Log.error( "Error identifying Active Authentication RSA message digest hash algorithm" )
                         return
                 }
+
+                Log.debug("Active Authentication RSA key uses hashtype \(hashType) and hashLength \(hashLength)")
                 
                 let message = [UInt8](decryptedSig[1 ..< (decryptedSig.count-hashLength)])
                 let digest = [UInt8](decryptedSig[(decryptedSig.count-hashLength)...])
@@ -406,12 +415,12 @@ public class NFCPassportModel {
                 // Check hashes match
                 if msgHash == digest {
                     self.activeAuthenticationStatus = .success
-                    Log.debug( "Active Authentication (RSA) successful" )
+                    Log.info( "Active Authentication (RSA) successful" )
                 } else {
                     Log.error( "Error verifying Active Authentication RSA signature - Hash doesn't match" )
                 }
             } catch {
-                Log.error( "Error verifying Active Authentication RSA signature - \(error)" )
+                Log.error("Error verifying Active Authentication RSA signature", error)
             }
         } else if let ecdsaPublicKey = dg15.ecdsaPublicKey {
             var digestType = ""
@@ -422,7 +431,7 @@ public class NFCPassportModel {
 
             if OpenSSLUtils.verifyECDSASignature( publicKey:ecdsaPublicKey, signature: signature, data: challenge, digestType: digestType ) {
                 self.activeAuthenticationStatus = .success
-                Log.debug( "Active Authentication (ECDSA) successful" )
+                Log.info( "Active Authentication (ECDSA) successful" )
             } else {
                 Log.error( "Error verifying Active Authentication ECDSA signature" )
             }
@@ -462,7 +471,7 @@ public class NFCPassportModel {
             throw error
         }
                 
-        Log.debug( "Trust chain found from document signer cert to CSCA with checkValidity=\(checkValidity)" )
+        Log.info( "Trust chain found from document signer cert to CSCA with checkValidity=\(checkValidity)" )
         return true
     }
 
@@ -483,13 +492,13 @@ public class NFCPassportModel {
         let result = countries.contains(isoCountry.alpha2.uppercased())
 
         Log.debug("Countries included in masterlist: \(countries)")
-        Log.debug("\(isoCountry.alpha2.uppercased()) is \(result ? "" : "NOT") included in masterlist")
+        Log.info("\(isoCountry.alpha2.uppercased()) is \(result ? "" : "NOT") included in masterlist")
 
         return result
 
     }
 
-    private func ensureReadDataNotBeenTamperedWith( useCMSVerification: Bool ) throws  {
+    private func ensureReadDataNotBeenTamperedWith() throws  {
         guard let sod = getDataGroup(.SOD) as? SOD else {
             throw PassiveAuthenticationError.SODMissing("No SOD found" )
         }
@@ -500,15 +509,19 @@ public class NFCPassportModel {
         do {
             signedData = try OpenSSLUtils.verifyAndReturnSODEncapsulatedData(sod: sod)
             documentSigningCertificateVerified = true
+            Log.info("Verified document signing certificate using RFS5652 method")
         } catch {
-            Log.debug("Error verifying document signing certificate using RFS5652 method - \(error)")
+            Log.warning("Could not verify document signing certificate using RFS5652 method", metadata: [
+                "reason": "\(error)"
+            ])
             Log.debug("Trying to verify document signing certificate using OpenSSL CMS method...")
 
             do {
                 signedData = try OpenSSLUtils.verifyAndReturnSODEncapsulatedDataUsingCMS(sod: sod)
                 documentSigningCertificateVerified = true
+                Log.info("Verified document signing certificate using OpenSSL CMS method")
             } catch {
-                Log.error("Error verifying document signing certificate - \(error)")
+                Log.error("Could not verify document signing certificate using OpenSSL CMS method", error)
                 signedData = try sod.getEncapsulatedContent()
             }
         }

@@ -441,7 +441,7 @@ public class PACEHandler {
             Log.verbose( "Received authentication token from passport - \(piccToken)")
 
             guard piccToken == expectedPICCToken else {
-                Log.error( "Error PICC Token mismatch!\npicToken - \(piccToken)\nexpectedPICCToken - \(expectedPICCToken)" )
+                Log.error( "Error PICC Token mismatch! picToken=\(piccToken) expectedPICCToken=\(expectedPICCToken)" )
                 sself.completedHandler?(false, nil)
                 sself.handleError( "Step3 KeyAgreement", "Error PICC Token mismatch!\npicToken - \(piccToken)\nexpectedPICCToken - \(expectedPICCToken)", readerError: nil )
                 return sself.doPACEForNextAlgorithm()
@@ -671,7 +671,7 @@ extension PACEHandler {
     func encodePublicKey( oid : String, key : OpaquePointer ) throws -> [UInt8] {
         let encodedOid = oidToBytes(oid:oid, replaceTag: false)
         guard let pubKeyData = OpenSSLUtils.getPublicKeyData(from: key) else {
-            Log.error( "PACEHandler: encodePublicKey() - Unable to get public key data" )
+            Log.error( "Unable to get public key data" )
             throw NFCPassportReaderError.InvalidDataPassed("Unable to get public key data")
         }
 

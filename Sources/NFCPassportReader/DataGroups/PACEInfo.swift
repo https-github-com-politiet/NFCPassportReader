@@ -66,6 +66,12 @@ public class PACEInfo : SecurityInfo {
         self.oid = oid
         self.version = version
         self.parameterId = parameterId
+
+        Log.info("Found PACEInfo", metadata: [
+            "paceOid": "\(oid)",
+            "paceVersion": "\(version)",
+            "paceParameterId": "\(parameterId ?? -1)"
+        ])
     }
     
     public override func getObjectIdentifier() -> String {

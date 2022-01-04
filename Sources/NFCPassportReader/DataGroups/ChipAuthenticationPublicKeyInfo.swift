@@ -23,6 +23,11 @@ public class ChipAuthenticationPublicKeyInfo : SecurityInfo {
         self.oid = oid
         self.pubKey = pubKey
         self.keyId = keyId
+
+        Log.info("Found ChipAuthenticationPublicKeyInfo", metadata: [
+            "capkiOid": "\(oid)",
+            "capkiKeyId": "\(keyId ?? -1)"
+        ])
     }
     
     public override func getObjectIdentifier() -> String {

@@ -734,27 +734,27 @@ public class OpenSSLUtils {
             
             if EVP_PKEY_derive_init(ctx) != 1 {
                 // error
-                Log.error( "ERROR - \(OpenSSLUtils.getOpenSSLError())" )
+                Log.error("Error computing shared secret - \(OpenSSLUtils.getOpenSSLError())")
             }
             
             // Set the public key
             if EVP_PKEY_derive_set_peer( ctx, publicKey ) != 1 {
                 // error
-                Log.error( "ERROR - \(OpenSSLUtils.getOpenSSLError())" )
+                Log.error("Error computing shared secret - \(OpenSSLUtils.getOpenSSLError())")
             }
             
             // get buffer length needed for shared secret
             var keyLen = 0
             if EVP_PKEY_derive(ctx, nil, &keyLen) != 1 {
                 // Error
-                Log.error( "ERROR - \(OpenSSLUtils.getOpenSSLError())" )
+                Log.error("Error computing shared secret - \(OpenSSLUtils.getOpenSSLError())")
             }
             
             // Derive the shared secret
             secret = [UInt8](repeating: 0, count: keyLen)
             if EVP_PKEY_derive(ctx, &secret, &keyLen) != 1 {
                 // Error
-                Log.error( "ERROR - \(OpenSSLUtils.getOpenSSLError())" )
+                Log.error("Error computing shared secret - \(OpenSSLUtils.getOpenSSLError())")
             }
         }
         return secret

@@ -29,6 +29,12 @@ public class ChipAuthenticationInfo : SecurityInfo {
         self.oid = oid
         self.version = version
         self.keyId = keyId
+
+        Log.info("Found ChipAuthenticationInfo", metadata: [
+            "caOid": "\(oid)",
+            "caVersion": "\(version)",
+            "caKeyId": "\(keyId ?? -1)"
+        ])
     }
     
     public override func getObjectIdentifier() -> String {
