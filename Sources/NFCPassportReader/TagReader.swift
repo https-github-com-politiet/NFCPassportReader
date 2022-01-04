@@ -13,6 +13,11 @@ import CoreNFC
 
 @available(iOS 13, *)
 public class TagReader {
+    enum CardAccessReadMode {
+        case ICAO9303
+        case ISO7816
+    }
+
     var tag : NFCISO7816Tag
     var secureMessaging : SecureMessaging?
     var maxDataLengthToRead : Int = 0xA0  // Should be able to use 256 to read arbitrary amounts of data at full speed BUT this isn't supported across all passports so for reliability just use the smaller amount.
@@ -221,7 +226,7 @@ public class TagReader {
         }
     }
 
-    func readCardAccess( completed: @escaping ([UInt8]?, NFCPassportReaderError?)->() ) {
+    func readCardAccess(mode: CardAccessReadMode = .ISO7816, completed: @escaping ([UInt8]?, NFCPassportReaderError?)->() ) {
         // Info provided by @smulu
         // By default NFCISO7816Tag requirers a list of ISO/IEC 7816 applets (AIDs). Upon discovery of NFC tag the first found applet from this list is automatically selected (and you have no way of changing this).
         // This is a problem for PACE protocol becaues it requires reading parameters from file EF.CardAccess which lies outside of eMRTD applet (AID: A0000002471001) in the master file.
@@ -231,17 +236,30 @@ public class TagReader {
         // After a bit of researching standard ISO/IEC 7816 I found there is an alternative SELECT command for selecting master file. The command doesn't differ much from the command specified in ICAO 9303 doc with only difference that data field is set to: 0x3F00. See section 6.11.3 of ISO/IEC 7816-4.
         // By executing above SELECT command (with data=0x3F00) master file should be selected and you should be able to read EF.CardAccess from passport.
         
-        // First select master file
-        let cmd : NFCISO7816APDU = NFCISO7816APDU(instructionClass: 0x00, instructionCode: 0xA4, p1Parameter: 0x00, p2Parameter: 0x0C, data: Data([0x3f,0x00]), expectedResponseLength: 256)
+        let cmdData: [UInt8]
+        switch mode {
+        case .ISO7816:
+            cmdData = [0x3f, 0x00]
+        case .ICAO9303:
+            cmdData = []
+        }
 
-        Log.info("Attempting to read CardAccess file")
-        
-        send( cmd: cmd) { response, error in
+        // First select master file
+        let cmd : NFCISO7816APDU = NFCISO7816APDU(instructionClass: 0x00, instructionCode: 0xA4, p1Parameter: 0x00, p2Parameter: 0x0C, data: Data(cmdData), expectedResponseLength: -1)
+
+        Log.info("Attempting to read CardAccess file using \(mode) mode")
+
+        send(cmd: cmd) { response, error in
             if let error = error {
-                completed( nil, error )
+                if mode == .ICAO9303 {
+                    completed(nil, error)
+                    return
+                }
+
+                self.readCardAccess(mode: .ICAO9303, completed: completed)
                 return
             }
-            
+
             // Now read EC.CardAccess
             self.selectFileAndRead(tag: [0x01,0x1C]) { data, error in
                 completed( data, error)
@@ -252,7 +270,7 @@ public class TagReader {
     func selectPassportApplication( completed: @escaping (ResponseAPDU?, NFCPassportReaderError?)->() ) {
         // Finally reselect the eMRTD application so the rest of the reading works as normal
         Log.debug( "Re-selecting eMRTD Application" )
-        let cmd : NFCISO7816APDU = NFCISO7816APDU(instructionClass: 0x00, instructionCode: 0xA4, p1Parameter: 0x04, p2Parameter: 0x0C, data: Data([0xA0, 0x00, 0x00, 0x02, 0x47, 0x10, 0x01]), expectedResponseLength: 256)
+        let cmd : NFCISO7816APDU = NFCISO7816APDU(instructionClass: 0x00, instructionCode: 0xA4, p1Parameter: 0x04, p2Parameter: 0x0C, data: Data([0xA0, 0x00, 0x00, 0x02, 0x47, 0x10, 0x01]), expectedResponseLength: -1)
         
         self.send( cmd: cmd) { response, error in
             completed( response, nil)
