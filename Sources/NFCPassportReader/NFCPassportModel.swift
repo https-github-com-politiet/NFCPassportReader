@@ -23,6 +23,7 @@ public enum PassportAuthenticationStatus {
 public class NFCPassportModel {
     public private(set) lazy var documentType : String = { return String( passportDataElements?["5F03"]?.first ?? "?" ) }()
     public private(set) lazy var documentSubType : String = { return String( passportDataElements?["5F03"]?.last ?? "?" ) }()
+    public private(set) lazy var optionalData1 : String = { return (passportDataElements?["53"] ?? "?").replacingOccurrences(of: "<", with: "" ) }()
     public private(set) lazy var documentNumber : String = { return (passportDataElements?["5A"] ?? "?").replacingOccurrences(of: "<", with: "" ) }()
     public private(set) lazy var issuingAuthority : String = { return passportDataElements?["5F28"] ?? "?" }()
     public private(set) lazy var documentExpiryDate : String = { return passportDataElements?["59"] ?? "?" }()
@@ -68,19 +69,9 @@ public class NFCPassportModel {
         return telephone
     }()
 
-    public private(set) lazy var personalNumber: String = {
+    public private(set) lazy var personalNumber: String? = {
         guard let dg11 = dataGroupsRead[.DG11] as? DataGroup11,
-              let personalNumber = dg11.personalNumber else {
-                  if var dg1PersonalNumber = passportDataElements?["53"] {
-                      if dg1PersonalNumber.count >= 14 {
-                          dg1PersonalNumber = String(dg1PersonalNumber.dropFirst())
-                      }
-
-                      return dg1PersonalNumber.replacingOccurrences(of: "<", with: "")
-                  } else {
-                      return "?"
-                  }
-              }
+              let personalNumber = dg11.personalNumber else { return nil }
 
         return personalNumber
     }()
