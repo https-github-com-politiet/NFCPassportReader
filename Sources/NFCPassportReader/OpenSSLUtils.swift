@@ -623,6 +623,8 @@ public class OpenSSLUtils {
             _ = i2d_ASN1_OBJECT(obj, &newPtr)
         }
         
+         ASN1_OBJECT_free(obj)
+        
         return data
     }
 
