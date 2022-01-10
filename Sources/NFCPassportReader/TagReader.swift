@@ -247,19 +247,20 @@ public class TagReader {
 
         Log.info("Attempting to read CardAccess file using \(mode) mode")
 
-        send(cmd: cmd) { response, error in
+        send(cmd: cmd) { [weak self] response, error in
+            guard let sself = self else { return }
             if let error = error {
                 if mode == .ICAO9303 {
                     completed(nil, error)
                     return
                 }
 
-                self.readCardAccess(mode: .ICAO9303, completed: completed)
+                sself.readCardAccess(mode: .ICAO9303, completed: completed)
                 return
             }
 
             // Now read EC.CardAccess
-            self.selectFileAndRead(tag: [0x01,0x1C]) { data, error in
+            sself.selectFileAndRead(tag: [0x01,0x1C]) { data, error in
                 completed( data, error)
             }
         }
@@ -304,20 +305,21 @@ public class TagReader {
         )
 
         Log.verbose( "TagReader - data bytes remaining: \(leftToRead), will read : \(readAmount)" )
-        self.send( cmd: cmd ) { (resp,err) in
+        self.send( cmd: cmd ) { [weak self] (resp,err) in
+            guard let sself = self else { return }
             guard let response = resp else {
                 completed( nil, err)
                 return
             }
             Log.verbose( "TagReader - got resp - \(response)" )
-            self.header += response.data
+            sself.header += response.data
             
             let remaining = leftToRead - response.data.count
             Log.verbose( "TagReader - Amount of data left to read - \(remaining)" )
             if remaining > 0 {
-                self.readBinaryData(leftToRead: remaining, amountRead: amountRead + response.data.count, completed: completed )
+                sself.readBinaryData(leftToRead: remaining, amountRead: amountRead + response.data.count, completed: completed )
             } else {
-                completed( self.header, err )
+                completed( sself.header, err )
             }
             
         }

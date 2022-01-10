@@ -371,11 +371,11 @@ extension PassportReader {
 
         let challenge = generateRandomUInt8Array(8)
         Log.verbose("Generated Active Authentication challenge - \(binToHexRep(challenge))")
-        self.tagReader?.doInternalAuthentication(challenge: challenge, completed: { (response, err) in
+        self.tagReader?.doInternalAuthentication(challenge: challenge, completed: { [weak self] (response, err) in
             if let response = response {
-                self.passport.verifyActiveAuthentication( challenge:challenge, signature:response.data )
+                self?.passport.verifyActiveAuthentication( challenge:challenge, signature:response.data )
             } else {
-                self.passport.activeAuthenticationStatus = .failed
+                self?.passport.activeAuthenticationStatus = .failed
                 Log.error("doInternalAuthentication failed - \(err?.localizedDescription ?? "")" )
             }
 
@@ -393,8 +393,8 @@ extension PassportReader {
         Log.info("Starting Basic Access Control (BAC)")
         
         self.bacHandler = BACHandler( tagReader: tagReader )
-        bacHandler?.performBACAndGetSessionKeys( mrzKey: accessKey ) { error in
-            self.bacHandler = nil
+        bacHandler?.performBACAndGetSessionKeys( mrzKey: accessKey ) { [weak self] error in
+            self?.bacHandler = nil
             completed(error)
         }
     }
@@ -410,11 +410,12 @@ extension PassportReader {
         do {
             self.paceHandler = try PACEHandler( cardAccess: cardAccess, tagReader: tagReader )
 
-            paceHandler?.doPACE(paceKeySeed: accessKey, paceKeyReference: paceKeyReference) { (paceSucceeded, readerError) in
+            paceHandler?.doPACE(paceKeySeed: accessKey, paceKeyReference: paceKeyReference) { [weak self] (paceSucceeded, readerError) in
+                guard let sself = self else { return }
                 if paceSucceeded {
                     completed(nil)
                 } else {
-                    self.paceHandler = nil
+                    sself.paceHandler = nil
                     if let readerError = readerError {
                         completed(readerError)
                     } else {
