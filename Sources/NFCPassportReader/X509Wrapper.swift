@@ -38,6 +38,10 @@ public class X509Wrapper {
         self.cert = X509_dup(cert)
     }
     
+    deinit {
+        X509_free(cert)
+    }
+    
     public func getItemsAsDict() -> [CertificateItem:String] {
         var item = [CertificateItem:String]()
         if let fingerprint = self.getFingerprint() {

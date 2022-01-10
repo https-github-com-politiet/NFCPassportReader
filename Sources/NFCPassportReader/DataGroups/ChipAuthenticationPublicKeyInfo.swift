@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import OpenSSL
 
 @available(iOS 13, macOS 10.15, *)
 public class ChipAuthenticationPublicKeyInfo : SecurityInfo {
@@ -28,6 +29,10 @@ public class ChipAuthenticationPublicKeyInfo : SecurityInfo {
             "capkiOid": "\(oid)",
             "capkiKeyId": "\(keyId ?? -1)"
         ])
+    }
+    
+    deinit {
+         EVP_PKEY_free(pubKey)
     }
     
     public override func getObjectIdentifier() -> String {
