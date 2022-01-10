@@ -41,16 +41,16 @@ public class ASN1Item : CustomDebugStringConvertible {
         _ = scanner.scanUpToCharacters(from: equals)
         self.length = scanner.scanInt() ?? -1
         self.itemType = scanner.scanUpToCharacters(from: colon) ?? ""
-        let rest = scanner.scanUpToCharacters(from: end)?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        let rest = scanner.scanUpToCharacters(from: end)?.trimWhitespacesAndNewlines() ?? ""
         
         if itemType == "cons" {
             type = rest
 
         } else {
             let items = rest.components(separatedBy: ":" ).filter{ !$0.isEmpty }
-            self.type = items[0].trimmingCharacters(in: .whitespacesAndNewlines)
+            self.type = items[0].trimWhitespacesAndNewlines()
             if ( items.count > 1 ) {
-                self.value = items[1].trimmingCharacters(in: .whitespacesAndNewlines)
+                self.value = items[1].trimWhitespacesAndNewlines()
             }
         }
     }
@@ -118,7 +118,7 @@ public class SimpleASN1DumpParser {
 
         var currentParent : ASN1Item?
         for line in lines {
-            if line.trimmingCharacters(in: .whitespacesAndNewlines) == "" {
+            if line.trimWhitespacesAndNewlines() == "" {
                 continue
             }
             let item = ASN1Item(line: line)

@@ -40,10 +40,10 @@ public class NFCPassportModel {
         let names = (passportDataElements?["5B"] ?? "?").components(separatedBy: "<<")
         var name = ""
         for i in 1 ..< names.count {
-            let fn = names[i].replacingOccurrences(of: "<", with: " " ).trimmingCharacters(in: CharacterSet.whitespacesAndNewlines)
+            let fn = names[i].replacingOccurrences(of: "<", with: " " ).trimWhitespacesAndNewlines()
             name += fn + " "
         }
-        return name.trimmingCharacters(in: CharacterSet.whitespacesAndNewlines)
+        return name.trimWhitespacesAndNewlines()
     }()
     
     public private(set) lazy var passportMRZ : String = { return passportDataElements?["5F1F"] ?? "NOT FOUND" }()
