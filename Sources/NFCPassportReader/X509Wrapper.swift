@@ -22,8 +22,8 @@ public enum CertificateItem : String {
     case serialNumber = "Serial number"
     case signatureAlgorithm = "Signature algorithm"
     case publicKeyAlgorithm = "Public key algorithm"
-    case authorityKeyId = "Authority Key Identifier"
-    case subjectKeyId = "Subject Key Identifier"
+    case authorityKeyId = "Authority key identifier"
+    case subjectKeyId = "Subject key identifier"
     case notBefore = "Valid from"
     case notAfter = "Valid to"
 }
