@@ -36,31 +36,32 @@ public class DataGroup11 : DataGroup {
         
         repeat {
             tag = try getNextTag()
-            let val = try String( bytes:getNextValue(), encoding:.utf8)
+            let val = try getNextValue()
+            let stringVal = try String( bytes:val, encoding:.utf8)
             if tag == 0x5F0E {
-                fullName = val
+                fullName = stringVal
             } else if tag == 0x5F10 {
-                personalNumber = val
+                personalNumber = stringVal
             } else if tag == 0x5F11 {
-                placeOfBirth = val
+                placeOfBirth = stringVal
             } else if tag == 0x5F2B {
-                dateOfBirth = val
+                dateOfBirth = parseDateFromBCDOrASCII(value: val)
             } else if tag == 0x5F42 {
-                address = val
+                address = stringVal
             } else if tag == 0x5F12 {
-                telephone = val
+                telephone = stringVal
             } else if tag == 0x5F13 {
-                profession = val
+                profession = stringVal
             } else if tag == 0x5F14 {
-                title = val
+                title = stringVal
             } else if tag == 0x5F15 {
-                personalSummary = val
+                personalSummary = stringVal
             } else if tag == 0x5F16 {
-                proofOfCitizenship = val
+                proofOfCitizenship = stringVal
             } else if tag == 0x5F17 {
-                tdNumbers = val
+                tdNumbers = stringVal
             } else if tag == 0x5F18 {
-                custodyInfo = val
+                custodyInfo = stringVal
             }
         } while pos < data.count
     }
