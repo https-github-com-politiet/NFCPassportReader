@@ -40,7 +40,7 @@ public class DataGroup12 : DataGroup {
             if tag == 0x5F19 {
                 issuingAuthority = String( bytes:val, encoding:.utf8)
             } else if tag == 0x5F26 {
-                dateOfIssue = parseDateOfIssue(value: val)
+                dateOfIssue = parseDateFromBCDOrASCII(value: val)
             } else if tag == 0xA0 {
                 // Not yet handled
             } else if tag == 0x5F1B {
@@ -57,21 +57,5 @@ public class DataGroup12 : DataGroup {
                 personalizationDeviceSerialNr = String( bytes:val, encoding:.utf8)
             }
         } while pos < data.count
-    }
-
-    private func parseDateOfIssue(value: [UInt8]) -> String? {
-        if value.count == 4 {
-            return decodeBCD(value: value)
-        } else {
-            return decodeASCII(value: value)
-        }
-    }
-
-    private func decodeASCII(value: [UInt8]) -> String? {
-        return String(bytes: value, encoding: .utf8)
-    }
-
-    private func decodeBCD(value: [UInt8]) -> String? {
-        value.map({ String(format: "%02X", $0) }).joined()
     }
 }

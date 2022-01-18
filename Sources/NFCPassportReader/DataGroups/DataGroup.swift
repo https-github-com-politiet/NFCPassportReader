@@ -81,4 +81,20 @@ public class DataGroup {
         return ret
     }
     
+    public func parseDateFromBCDOrASCII(value: [UInt8]) -> String? {
+        if value.count == 4 {
+            return decodeBCD(value: value)
+        } else {
+            return decodeASCII(value: value)
+        }
+    }
+    
+    private func decodeASCII(value: [UInt8]) -> String? {
+        return String(bytes: value, encoding: .utf8)
+    }
+    
+    private func decodeBCD(value: [UInt8]) -> String? {
+        value.map({ String(format: "%02X", $0) }).joined()
+    }
+    
 }
