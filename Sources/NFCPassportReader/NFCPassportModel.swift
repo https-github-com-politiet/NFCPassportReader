@@ -7,6 +7,7 @@
 
 
 import Foundation
+import FirebaseCrashlytics
 
 #if os(iOS)
 import UIKit
@@ -196,7 +197,12 @@ public class NFCPassportModel {
         
     
     public init() {
-        
+        Crashlytics.crashlytics().setCustomKeysAndValues([
+            FirebaseCustomKeys.BACStatus: "not done",
+            FirebaseCustomKeys.PACEStatus: "not done",
+            FirebaseCustomKeys.chipAuthenticationStatus: "not done",
+            FirebaseCustomKeys.activeAuthenticationStatus: "not done",
+        ])
     }
     
     public init(documentNumber: String, documentType: String, documentSubType: String, issuingAuthority: String,
@@ -209,6 +215,12 @@ public class NFCPassportModel {
         self.dateOfBirth = dateOfBirth
         self.gender = gender
         self.nationality = nationality
+        Crashlytics.crashlytics().setCustomKeysAndValues([
+            FirebaseCustomKeys.BACStatus: "not done",
+            FirebaseCustomKeys.PACEStatus: "not done",
+            FirebaseCustomKeys.chipAuthenticationStatus: "not done",
+            FirebaseCustomKeys.activeAuthenticationStatus: "not done",
+        ])
     }
     
     public init( from dump: [String:String] ) {
@@ -367,6 +379,7 @@ public class NFCPassportModel {
         Log.verbose( "   signature - \(binToHexRep(signature))")
 
         // Get AA Public key
+        Crashlytics.crashlytics().setCustomValue("fail", forKey: FirebaseCustomKeys.activeAuthenticationStatus)
         self.activeAuthenticationStatus = .failed
         guard  let dg15 = self.dataGroupsRead[.DG15] as? DataGroup15 else { return }
         if let rsaKey = dg15.rsaPublicKey {
@@ -421,6 +434,7 @@ public class NFCPassportModel {
                 
                 // Check hashes match
                 if msgHash == digest {
+                    Crashlytics.crashlytics().setCustomValue("success", forKey: FirebaseCustomKeys.activeAuthenticationStatus)
                     self.activeAuthenticationStatus = .success
                     Log.info( "Active Authentication (RSA) successful" )
                 } else {
@@ -434,9 +448,15 @@ public class NFCPassportModel {
             if let dg14 = dataGroupsRead[.DG14] as? DataGroup14,
                let aa = dg14.securityInfos.compactMap({ $0 as? ActiveAuthenticationInfo }).first {
                 digestType = aa.getSignatureAlgorithmOIDString() ?? ""
+                Crashlytics.crashlytics().setCustomKeysAndValues([
+                    FirebaseCustomKeys.activeAuthenticationInfoSignatureAlgorithmOID: aa.getSignatureAlgorithmOIDString() ?? "",
+                    FirebaseCustomKeys.activeAuthenticationInfoVersion: aa.version,
+                    FirebaseCustomKeys.activeAuthenticationInfoOID: aa.getObjectIdentifier(),
+                ])
                }
 
             if OpenSSLUtils.verifyECDSASignature( publicKey:ecdsaPublicKey, signature: signature, data: challenge, digestType: digestType ) {
+                Crashlytics.crashlytics().setCustomValue("success", forKey: FirebaseCustomKeys.activeAuthenticationStatus)
                 self.activeAuthenticationStatus = .success
                 Log.info( "Active Authentication (ECDSA) successful" )
             } else {

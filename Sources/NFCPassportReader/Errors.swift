@@ -41,7 +41,7 @@ public enum NFCPassportReaderError: Error {
     case InvalidDataPassed(String)
     case NotYetSupported(String)
 
-    var value: String {
+    public var value: String {
         switch self {
             case .ResponseError(let errMsg, _, _): return errMsg
             case .InvalidResponse: return "InvalidResponse"
