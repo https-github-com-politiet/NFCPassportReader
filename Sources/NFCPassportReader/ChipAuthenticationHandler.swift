@@ -7,6 +7,7 @@
 
 import Foundation
 import OpenSSL
+import FirebaseCrashlytics
 
 #if !os(macOS)
 import CoreNFC
@@ -55,6 +56,7 @@ class ChipAuthenticationHandler {
         
         Log.info("Performing Chip Authentication - number of public keys found - \(chipAuthPublicKeyInfos.count)")
         guard isChipAuthenticationSupported else {
+            Crashlytics.crashlytics().setCustomValue("not supported", forKey: FirebaseCustomKeys.chipAuthenticationStatus)
             completed( false )
             return
         }
@@ -65,6 +67,7 @@ class ChipAuthenticationHandler {
     private func doChipAuthenticationForNextPublicKey( ) {
         // If no more public keys to try then we've failed
         guard chipAuthPublicKeyInfos.count > 0 else {
+            Crashlytics.crashlytics().setCustomValue("fail", forKey: FirebaseCustomKeys.chipAuthenticationStatus)
             completedHandler?( false )
             return
         }
@@ -73,13 +76,24 @@ class ChipAuthenticationHandler {
         // So if we do have a ChipAuthInfo the we take the keyId (if present) and OID from there,
         // BUT if we don't then we will try to infer the OID from the public key
         let chipAuthPublicKeyInfo = chipAuthPublicKeyInfos.removeFirst()
-        let keyId = chipAuthPublicKeyInfo.keyId
+        let keyId = chipAuthPublicKeyInfo.getKeyId()
+        Crashlytics.crashlytics().setCustomKeysAndValues([
+            FirebaseCustomKeys.chipAuthenticationPublicKeyInfoOID: chipAuthPublicKeyInfo.getObjectIdentifier(),
+            FirebaseCustomKeys.chipAuthenticationPublicKeyInfoKeyID: keyId
+        ])
+
         let chipAuthInfoOID : String
-        if let chipAuthInfo = chipAuthInfos[keyId ?? 0] {
+        if let chipAuthInfo = chipAuthInfos[keyId] {
             chipAuthInfoOID = chipAuthInfo.oid
+            Crashlytics.crashlytics().setCustomKeysAndValues([
+                FirebaseCustomKeys.chipAuthenticationInfoKeyID: chipAuthInfo.getKeyId(),
+                FirebaseCustomKeys.chipAuthenticationInfoVersion: chipAuthInfo.version,
+                FirebaseCustomKeys.chipAuthenticationInfoOID: chipAuthInfoOID
+            ])
         } else {
             if let oid = inferOID( fromPublicKeyOID:chipAuthPublicKeyInfo.oid) {
                 chipAuthInfoOID = oid
+                Crashlytics.crashlytics().setCustomValue(chipAuthInfoOID, forKey: FirebaseCustomKeys.chipAuthenticationInfoOID)
             } else {
                 self.doChipAuthenticationForNextPublicKey()
                 return
@@ -95,6 +109,7 @@ class ChipAuthenticationHandler {
                 if !success {
                     self.doChipAuthenticationForNextPublicKey()
                 } else {
+                    Crashlytics.crashlytics().setCustomValue("success", forKey: FirebaseCustomKeys.chipAuthenticationStatus)
                     completedHandler?( true )
                 }
             })

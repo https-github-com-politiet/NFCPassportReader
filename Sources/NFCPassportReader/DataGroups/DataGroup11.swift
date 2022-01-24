@@ -37,7 +37,7 @@ public class DataGroup11 : DataGroup {
         repeat {
             tag = try getNextTag()
             let val = try getNextValue()
-            let stringVal = try String( bytes:val, encoding:.utf8)
+            let stringVal = String( bytes:val, encoding:.utf8)
             if tag == 0x5F0E {
                 fullName = stringVal
             } else if tag == 0x5F10 {

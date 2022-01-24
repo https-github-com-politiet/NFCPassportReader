@@ -8,6 +8,7 @@
 
 import Foundation
 import Logging
+import FirebaseCrashlytics
 
 #if !os(macOS)
 import UIKit
@@ -303,12 +304,15 @@ extension PassportReader {
         self.handleBAC(completed: { [weak self] error in
             if error == nil {
                 Log.info("BAC Successful")
+                
+                Crashlytics.crashlytics().setCustomValue("success", forKey: FirebaseCustomKeys.BACStatus)
                 self?.passport.BACStatus = .success
                 // At this point, BAC Has been done and the TagReader has been set up with the SecureMessaging
                 // session keys
                 self?.startReadingDataGroups()
             } else if let error = error {
                 Log.error("BAC Failed", error)
+                    Crashlytics.crashlytics().setCustomValue("fail", forKey: FirebaseCustomKeys.BACStatus)
                 self?.passport.BACStatus = .failed
                 let displayMessage = NFCViewDisplayMessage.error(error)
                 self?.invalidateSession(errorMessage: displayMessage, error: error)
@@ -352,17 +356,22 @@ extension PassportReader {
         // Mark the next 'invalid session' error as not reportable (we're about to cause it by invalidating the
         // session). The real error is reported back with the call to the completed handler
         self.shouldNotReportNextReaderSessionInvalidationErrorUserCanceled = true
+        
+        Crashlytics.crashlytics().setCustomValue(passport.dataGroupsAvailable.map( { $0.getName() }).joined(separator: ", "), forKey: FirebaseCustomKeys.datagroupsRead)
+        
         self.readerSession?.invalidate(errorMessage: self.nfcViewDisplayMessageHandler?(errorMessage) ?? errorMessage.description)
         self.scanCompletedHandler(nil, error)
     }
 
     func doActiveAuthenticationIfNeccessary( completed: @escaping ()->() ) {
         guard self.passport.isActiveAuthenticationSupported else {
+            Crashlytics.crashlytics().setCustomValue("not supported", forKey: FirebaseCustomKeys.activeAuthenticationStatus)
             completed()
             return
         }
 
         guard self.passport.chipAuthenticationStatus != .success else {
+                Crashlytics.crashlytics().setCustomValue("success", forKey: FirebaseCustomKeys.activeAuthenticationStatus)
             completed()
             return
         }
@@ -375,6 +384,7 @@ extension PassportReader {
             if let response = response {
                 self?.passport.verifyActiveAuthentication( challenge:challenge, signature:response.data )
             } else {
+                Crashlytics.crashlytics().setCustomValue("fail", forKey: FirebaseCustomKeys.activeAuthenticationStatus)
                 self?.passport.activeAuthenticationStatus = .failed
                 Log.error("doInternalAuthentication failed - \(err?.localizedDescription ?? "")" )
             }

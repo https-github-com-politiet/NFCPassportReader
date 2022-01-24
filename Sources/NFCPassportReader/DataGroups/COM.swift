@@ -5,6 +5,7 @@
 //
 
 import Foundation
+import FirebaseCrashlytics
 
 @available(iOS 13, macOS 10.15, *)
 public class COM : DataGroup {
@@ -61,5 +62,6 @@ public class COM : DataGroup {
             }
         }
         Log.info( "DG Found - \(dataGroupsPresent)" )
+        Crashlytics.crashlytics().setCustomValue(dataGroupsPresent.joined(separator: ", "), forKey: FirebaseCustomKeys.datagroupsPresent)
     }
 }

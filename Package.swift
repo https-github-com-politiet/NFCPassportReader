@@ -17,6 +17,9 @@ let package = Package(
         // .package(url: /* package url */, from: "1.0.0"),
         .package(url: "https://github.com/krzyzanowskim/OpenSSL.git", .upToNextMinor(from: "1.1.180")),
         .package(url: "https://github.com/apple/swift-log.git", from: "1.0.0"),
+        .package(name: "Firebase",
+                 url: "https://github.com/firebase/firebase-ios-sdk.git",
+                 from: "8.0.0"),
 
     ],
     targets: [
@@ -26,7 +29,9 @@ let package = Package(
             name: "NFCPassportReader",
             dependencies: [
                 "OpenSSL",
-                .product(name: "Logging", package: "swift-log")
+                .product(name: "Logging", package: "swift-log"),
+                .product(name: "FirebaseAnalytics", package: "Firebase"),
+                .product(name: "FirebaseCrashlytics", package: "Firebase"),
             ]),
         .testTarget(
             name: "NFCPassportReaderTests",
