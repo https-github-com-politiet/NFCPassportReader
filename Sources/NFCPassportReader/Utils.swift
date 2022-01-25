@@ -9,6 +9,7 @@
 import Foundation
 import CommonCrypto
 import CryptoTokenKit
+import FirebaseCrashlytics
 
 #if canImport(CryptoKit)
     import CryptoKit
@@ -342,6 +343,7 @@ public func calcHash( data: [UInt8], hashAlgorithm: String ) throws -> [UInt8] {
     } else if hashAlgorithm == "sha512" {
         ret = calcSHA512Hash(data)
     } else {
+        Crashlytics.crashlytics().setCustomValue("Algorithm \(hashAlgorithm) is invalid", forKey: FirebaseCustomKeys.errorInfo)
         throw NFCPassportReaderError.InvalidHashAlgorithmSpecified
     }
         

@@ -7,6 +7,7 @@
 //
 
 import Foundation
+import FirebaseCrashlytics
 
 #if !os(macOS)
 import CoreNFC
@@ -41,6 +42,7 @@ public class TagReader {
 
     func readDataGroup( dataGroup: DataGroupId, completed: @escaping ([UInt8]?, NFCPassportReaderError?)->() )  {
         guard let tag = dataGroup.getFileIDTag() else {
+            Crashlytics.crashlytics().setCustomValue("Unsupported datagroup: \(dataGroup.getName())", forKey: FirebaseCustomKeys.errorInfo)
             completed(nil, NFCPassportReaderError.UnsupportedDataGroup)
             return
         }
@@ -342,6 +344,7 @@ public class TagReader {
         tag.sendCommand(apdu: toSend) { [unowned self] (data, sw1, sw2, error) in
             if let error = error {
                 Log.error( "TagReader - Error reading tag", error )
+                Crashlytics.crashlytics().setCustomValue("TagReader - Error reading tag", forKey: FirebaseCustomKeys.errorInfo)
                 completed( nil, NFCPassportReaderError.ResponseError( error.localizedDescription, sw1, sw2 ) )
             } else {
                 Log.verbose( "TagReader - Received response" )
@@ -375,6 +378,7 @@ public class TagReader {
                     if (rep.sw1 == 0x63 && rep.sw2 == 0x00) {
                         tagError = NFCPassportReaderError.InvalidMRZKey
                     } else {
+                        Crashlytics.crashlytics().setCustomValue("Error reading tag: sw1 - \(sw1rep), sw2 - \(sw2rep). Decoded error: \(errorMsg)", forKey: FirebaseCustomKeys.errorInfo)
                         tagError = NFCPassportReaderError.ResponseError(errorMsg, sw1, sw2)
                     }
                     

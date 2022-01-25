@@ -10,7 +10,7 @@ import Foundation
 
 // MARK: TagError
 @available(iOS 13, macOS 10.15, *)
-public enum NFCPassportReaderError: Error {
+public enum NFCPassportReaderError: Error, Equatable {
     case ResponseError(String, UInt8, UInt8)
     case InvalidResponse
     case UnexpectedError

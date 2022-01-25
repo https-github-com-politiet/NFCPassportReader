@@ -6,7 +6,7 @@
 //
 
 import Foundation
-
+import FirebaseCrashlytics
 import CryptoKit
 
 @available(iOS 13, macOS 10.15, *)
@@ -149,6 +149,7 @@ class SecureMessagingSessionKeyGenerator {
             }
             hash = Array(hasher.finalize())
         } else {
+            Crashlytics.crashlytics().setCustomValue("Algorithm \(algo) is invalid", forKey: FirebaseCustomKeys.errorInfo)
             throw NFCPassportReaderError.InvalidHashAlgorithmSpecified
         }
         

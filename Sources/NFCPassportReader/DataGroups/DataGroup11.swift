@@ -5,6 +5,7 @@
 //
 
 import Foundation
+import FirebaseCrashlytics
 
 @available(iOS 13, macOS 10.15, *)
 public class DataGroup11 : DataGroup {
@@ -23,7 +24,12 @@ public class DataGroup11 : DataGroup {
     public private(set) var custodyInfo : String?
     
     required init( _ data : [UInt8] ) throws {
-        try super.init(data)
+        do {
+            try super.init(data)
+        } catch {
+            Crashlytics.crashlytics().setCustomValue("Error parsing DG11", forKey: FirebaseCustomKeys.errorInfo)
+            throw NFCPassportReaderError.InvalidResponse
+        }
         datagroupType = .DG11
     }
     

@@ -5,6 +5,7 @@
 //
 
 import Foundation
+import FirebaseCrashlytics
 
 @available(iOS 13, macOS 10.15, *)
 public enum DocTypeEnum: String {
@@ -25,7 +26,12 @@ public class DataGroup1 : DataGroup {
     public private(set) var elements : [String:String] = [:]
     
     required init( _ data : [UInt8] ) throws {
-        try super.init(data)
+        do {
+            try super.init(data)
+        } catch {
+            Crashlytics.crashlytics().setCustomValue("Error parsing DG1", forKey: FirebaseCustomKeys.errorInfo)
+            throw NFCPassportReaderError.InvalidResponse
+        }
         datagroupType = .DG1
     }
     
