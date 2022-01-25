@@ -5,6 +5,7 @@
 //
 
 import Foundation
+import FirebaseCrashlytics
 
 #if !os(macOS)
 import UIKit
@@ -48,7 +49,12 @@ func getImage() -> UIImage? {
 #endif
 
     required init( _ data : [UInt8] ) throws {
-        try super.init(data)
+        do {
+            try super.init(data)
+        } catch {
+            Crashlytics.crashlytics().setCustomValue("Error parsing DG2", forKey: FirebaseCustomKeys.errorInfo)
+            throw NFCPassportReaderError.InvalidResponse
+        }
         datagroupType = .DG2
     }
     

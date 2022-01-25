@@ -7,6 +7,7 @@
 //
 
 import Foundation
+import FirebaseCrashlytics
 
 public enum SecureMessagingSupportedAlgorithms {
     case DES
@@ -194,10 +195,12 @@ public class SecureMessaging {
             Log.verbose("\t\t\(binToHexRep(CC)) == \(binToHexRep(CCb)) ? \(res)")
             
             if !res {
+                Crashlytics.crashlytics().setCustomValue("CC is not equal to data of DO'8E' of RAPDU", forKey: FirebaseCustomKeys.errorInfo)
                 throw NFCPassportReaderError.InvalidResponseChecksum
             }
         }
         else if needCC {
+            Crashlytics.crashlytics().setCustomValue("DO'8E' is missing", forKey: FirebaseCustomKeys.errorInfo)
             throw NFCPassportReaderError.MissingMandatoryFields
         }
         

@@ -5,6 +5,7 @@
 //
 
 import Foundation
+import FirebaseCrashlytics
 
 @available(iOS 13, macOS 10.15, *)
 public class DataGroup {
@@ -37,6 +38,7 @@ public class DataGroup {
         
         // Fix for some passports that may have invalid data - ensure that we do have data!
         guard data.count > pos else {
+            Crashlytics.crashlytics().setCustomValue("Document has invalid data", forKey: FirebaseCustomKeys.errorInfo)
             throw NFCPassportReaderError.TagNotValid
         }
 

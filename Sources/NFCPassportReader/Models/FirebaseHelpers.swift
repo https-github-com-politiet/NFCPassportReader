@@ -27,4 +27,5 @@ enum FirebaseCustomKeys {
     static let BACStatus = "BACStatus"
     static let datagroupsRead = "datagroupsRead"
     static let datagroupsPresent = "datagroupsPresent"
+    static let errorInfo = "errorInfo"
 }

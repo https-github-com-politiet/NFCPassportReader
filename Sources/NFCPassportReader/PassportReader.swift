@@ -191,6 +191,7 @@ extension PassportReader : NFCTagReaderSessionDelegate {
                 Log.debug("tagReaderSession:failed to connect to tag", metadata: [
                     "error": "\(error!)"
                 ])
+                Crashlytics.crashlytics().setCustomValue("Failed to connect to tag", forKey: FirebaseCustomKeys.errorInfo)
                 let errorMessage = NFCViewDisplayMessage.error(NFCPassportReaderError.ConnectionError)
                 self.invalidateSession(errorMessage: errorMessage, error: NFCPassportReaderError.ConnectionError)
                 return

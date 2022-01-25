@@ -99,7 +99,10 @@ public class PACEHandler {
     private func doPACEForNextAlgorithm() {
         // If no more pace algorithms to try then we've failed
         guard paceInfos.count > 0 else {
-            Crashlytics.crashlytics().setCustomValue("fail", forKey: FirebaseCustomKeys.PACEStatus)
+            Crashlytics.crashlytics().setCustomKeysAndValues([
+                FirebaseCustomKeys.PACEStatus: "fail",
+                FirebaseCustomKeys.errorInfo: "All \(paceInfos.count) available PACE algorithms were unsuccessful"
+            ])
             completedHandler?( false, NFCPassportReaderError.PaceFailed )
             return
         }
@@ -331,6 +334,7 @@ public class PACEHandler {
     func doPACEStep2IM( passportNonce: [UInt8] ) {
         // Not implemented yet
         Crashlytics.crashlytics().setCustomValue("Step 2 IM", forKey: FirebaseCustomKeys.PACEStep)
+        Crashlytics.crashlytics().setCustomValue("PACE IM is not implemented", forKey: FirebaseCustomKeys.errorInfo)
         handleError( "Step2IM", "IM not yet implemented", readerError: NFCPassportReaderError.NotImplemented )
         return doPACEForNextAlgorithm()
 

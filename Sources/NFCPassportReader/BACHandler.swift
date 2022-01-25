@@ -7,6 +7,7 @@
 //
 
 import Foundation
+import FirebaseCrashlytics
 
 #if !os(macOS)
 import CoreNFC
@@ -190,9 +191,10 @@ public class BACHandler {
         let response = tripleDESDecrypt(key: self.ksenc, message: [UInt8](data[0..<32]), iv: [0,0,0,0,0,0,0,0] )
 
         let response_kicc = [UInt8](response[16..<32])
-        let responce_kifd = [UInt8](response[8..<16])
+        let response_kifd = [UInt8](response[8..<16])
         
-        guard responce_kifd == self.rnd_ifd else {
+        guard response_kifd == self.rnd_ifd else {
+            Crashlytics.crashlytics().setCustomValue("response_kifd doesn't match rnd_ifd", forKey: FirebaseCustomKeys.errorInfo)
             throw NFCPassportReaderError.InvalidResponse
         }
         
