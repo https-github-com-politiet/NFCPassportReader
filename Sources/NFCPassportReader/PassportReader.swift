@@ -7,7 +7,6 @@
 //
 
 import Foundation
-import Logging
 import FirebaseCrashlytics
 
 #if !os(macOS)
@@ -48,14 +47,6 @@ public class PassportReader : NSObject {
         self.masterListURL = masterListURL
     }
 
-    public func setLogger(_ logger: Logger) {
-        Log.setSharedInstance(logger: logger)
-    }
-
-    public func setLogMetadata(_ metadata: Logger.Metadata) {
-        Log.setMetadata(metadata)
-    }
-    
     public func setMasterListURL( _ masterListURL : URL ) {
         self.masterListURL = masterListURL
     }
@@ -262,7 +253,7 @@ extension PassportReader {
     func doPACEAuthentication(cardAccess:CardAccess) {
         self.handlePACE(cardAccess:cardAccess, paceKeyReference: paceKeyReference ?? PACEHandler.NO_PACE_KEY_REFERENCE, completed: { [weak self] error in
             if error == nil {
-                Log.info("PACE Successful")
+                Log.debug("PACE Successful")
                 self?.passport.PACEStatus = .success
 
                 // At this point, PACE has been done and the TagReader has been set up with the SecureMessaging
@@ -304,7 +295,7 @@ extension PassportReader {
         }
         self.handleBAC(completed: { [weak self] error in
             if error == nil {
-                Log.info("BAC Successful")
+                Log.debug("BAC Successful")
                 
                 Crashlytics.crashlytics().setCustomValue("success", forKey: FirebaseCustomKeys.BACStatus)
                 self?.passport.BACStatus = .success
@@ -377,10 +368,10 @@ extension PassportReader {
             return
         }
         
-        Log.info("Performing Active Authentication")
+        Log.debug("Performing Active Authentication")
 
         let challenge = generateRandomUInt8Array(8)
-        Log.verbose("Generated Active Authentication challenge - \(binToHexRep(challenge))")
+        Log.debug("Generated Active Authentication challenge - \(binToHexRep(challenge))")
         self.tagReader?.doInternalAuthentication(challenge: challenge, completed: { [weak self] (response, err) in
             if let response = response {
                 self?.passport.verifyActiveAuthentication( challenge:challenge, signature:response.data )
@@ -401,7 +392,7 @@ extension PassportReader {
             return
         }
         
-        Log.info("Starting Basic Access Control (BAC)")
+        Log.debug("Starting Basic Access Control (BAC)")
         
         self.bacHandler = BACHandler( tagReader: tagReader )
         bacHandler?.performBACAndGetSessionKeys( mrzKey: accessKey ) { [weak self] error in
@@ -416,7 +407,7 @@ extension PassportReader {
             return
         }
         
-        Log.info("Starting Password Authenticated Connection Establishment (PACE)")
+        Log.debug("Starting Password Authenticated Connection Establishment (PACE)")
         
         do {
             self.paceHandler = try PACEHandler( cardAccess: cardAccess, tagReader: tagReader )
@@ -450,7 +441,7 @@ extension PassportReader {
         
         let dgId = dataGroupsToRead[0]
         self.currentlyReadingDataGroup = dgId
-        Log.info( "Reading tag - \(dgId)" )
+        Log.debug( "Reading tag - \(dgId)" )
         elementReadAttempts += 1
         
         self.updateReaderSessionMessage( alertMessage: NFCViewDisplayMessage.readingDataGroupProgress(dgId, 0) )

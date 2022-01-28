@@ -67,7 +67,7 @@ public class COM : DataGroup {
                 dataGroupsPresent.append( DataGroupParser.dataGroupNames[index] )
             }
         }
-        Log.info( "DG Found - \(dataGroupsPresent)" )
+        Log.debug( "DG Found - \(dataGroupsPresent)" )
         Crashlytics.crashlytics().setCustomValue(dataGroupsPresent.joined(separator: ", "), forKey: FirebaseCustomKeys.datagroupsPresent)
     }
 }

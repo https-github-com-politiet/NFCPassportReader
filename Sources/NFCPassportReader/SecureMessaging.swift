@@ -42,11 +42,11 @@ public class SecureMessaging {
     /// Protect the apdu following the doc9303 specification
     func protect(apdu : NFCISO7816APDU ) throws -> NFCISO7816APDU {
     
-        Log.verbose("\t\tSSC: \(binToHexRep(self.ssc))")
+        Log.debug("\t\tSSC: \(binToHexRep(self.ssc))")
         self.ssc = self.incSSC()
         let paddedSSC = algoName == .DES ? self.ssc : [UInt8](repeating: 0, count: 8) + ssc
-        Log.verbose("\tIncrement SSC with 1")
-        Log.verbose("\t\tSSC: \(binToHexRep(self.ssc))")
+        Log.debug("\tIncrement SSC with 1")
+        Log.debug("\t\tSSC: \(binToHexRep(self.ssc))")
 
 
         let cmdHeader = self.maskClassAndPad(apdu: apdu)
@@ -66,21 +66,21 @@ public class SecureMessaging {
         }
         
         let M = cmdHeader + do87 + do97
-        Log.verbose("\(tmp)")
-        Log.verbose("\tM: \(binToHexRep(M))")
+        Log.debug("\(tmp)")
+        Log.debug("\tM: \(binToHexRep(M))")
         
-        Log.verbose("Compute MAC of M")
+        Log.debug("Compute MAC of M")
         
         let N = pad(paddedSSC + M, blockSize:padLength)
-        Log.verbose("\tConcatenate SSC and M and add padding")
-        Log.verbose("\t\tN: \(binToHexRep(N))")
+        Log.debug("\tConcatenate SSC and M and add padding")
+        Log.debug("\t\tN: \(binToHexRep(N))")
 
         var CC = mac(algoName: algoName, key: self.ksmac, msg: N)
         if CC.count > 8 {
             CC = [UInt8](CC[0..<8])
         }
-        Log.verbose("\tCompute MAC over N with KSmac")
-        Log.verbose("\t\tCC: \(binToHexRep(CC))")
+        Log.debug("\tCompute MAC over N with KSmac")
+        Log.debug("\t\tCC: \(binToHexRep(CC))")
         
         let do8e = self.buildD08E(mac: CC)
         
@@ -103,8 +103,8 @@ public class SecureMessaging {
         } else {
             protectedAPDU += [0x00]
         }
-        Log.verbose("Construct and send protected APDU")
-        Log.verbose("\tProtectedAPDU: \(binToHexRep(protectedAPDU))")
+        Log.debug("Construct and send protected APDU")
+        Log.debug("\tProtectedAPDU: \(binToHexRep(protectedAPDU))")
         
         let newAPDU = NFCISO7816APDU(data:Data(protectedAPDU))!
         return newAPDU
@@ -121,8 +121,8 @@ public class SecureMessaging {
         
         self.ssc = self.incSSC()
         let paddedSSC = algoName == .DES ? self.ssc : [UInt8](repeating: 0, count: 8) + ssc
-        Log.verbose("\tIncrement SSC with 1")
-        Log.verbose("\t\tSSC: \(binToHexRep(self.ssc))")
+        Log.debug("\tIncrement SSC with 1")
+        Log.debug("\t\tSSC: \(binToHexRep(self.ssc))")
                 
         // Check for a SM error
         if(rapdu.sw1 != 0x90 || rapdu.sw2 != 0x00) {
@@ -130,8 +130,8 @@ public class SecureMessaging {
         }
 
         let rapduBin = rapdu.data + [rapdu.sw1, rapdu.sw2]
-        Log.verbose("Receive response APDU of MRTD's chip")
-        Log.verbose("\tRAPDU: \(binToHexRep(rapduBin))")
+        Log.debug("Receive response APDU of MRTD's chip")
+        Log.debug("\tRAPDU: \(binToHexRep(rapduBin))")
         
         // DO'87'
         // Mandatory if data is returned, otherwise absent
@@ -177,22 +177,22 @@ public class SecureMessaging {
             if do99.count > 0 {
                 tmp += " DO'99"
             }
-            Log.verbose("Verify RAPDU CC by computing MAC of \(tmp)")
+            Log.debug("Verify RAPDU CC by computing MAC of \(tmp)")
             
             let K = pad(paddedSSC + do87 + do99, blockSize:padLength)
-            Log.verbose("\tConcatenate SSC and \(tmp) and add padding")
-            Log.verbose("\t\tK: \(binToHexRep(K))")
+            Log.debug("\tConcatenate SSC and \(tmp) and add padding")
+            Log.debug("\t\tK: \(binToHexRep(K))")
             
-            Log.verbose("\tCompute MAC with KSmac")
+            Log.debug("\tCompute MAC with KSmac")
             var CCb = mac(algoName: algoName, key: self.ksmac, msg: K)
             if CCb.count > 8 {
                 CCb = [UInt8](CC[0..<8])
             }
-            Log.verbose("\t\tCC: \(binToHexRep(CCb))")
+            Log.debug("\t\tCC: \(binToHexRep(CCb))")
             
             let res = (CC == CCb)
-            Log.verbose("\tCompare CC with data of DO'8E of RAPDU")
-            Log.verbose("\t\t\(binToHexRep(CC)) == \(binToHexRep(CCb)) ? \(res)")
+            Log.debug("\tCompare CC with data of DO'8E of RAPDU")
+            Log.debug("\t\t\(binToHexRep(CC)) == \(binToHexRep(CCb)) ? \(res)")
             
             if !res {
                 Crashlytics.crashlytics().setCustomValue("CC is not equal to data of DO'8E' of RAPDU", forKey: FirebaseCustomKeys.errorInfo)
@@ -219,26 +219,26 @@ public class SecureMessaging {
 
             // There is a payload
             data = unpad(dec)
-            Log.verbose("Decrypt data of DO'87 with KSenc")
-            Log.verbose("\tDecryptedData: \(binToHexRep(data))")
+            Log.debug("Decrypt data of DO'87 with KSenc")
+            Log.debug("\tDecryptedData: \(binToHexRep(data))")
         }
         
-        Log.verbose("Unprotected APDU: [\(binToHexRep(data))] \(binToHexRep(sw1)) \(binToHexRep(sw2))" )
+        Log.debug("Unprotected APDU: [\(binToHexRep(data))] \(binToHexRep(sw1)) \(binToHexRep(sw2))" )
         return ResponseAPDU(data: data, sw1: sw1, sw2: sw2)
     }
 
     func maskClassAndPad(apdu : NFCISO7816APDU ) -> [UInt8] {
-        Log.verbose("Mask class byte and pad command header")
+        Log.debug("Mask class byte and pad command header")
         let res = pad([0x0c, apdu.instructionCode, apdu.p1Parameter, apdu.p2Parameter], blockSize: padLength)
-        Log.verbose("\tCmdHeader: \(binToHexRep(res))")
+        Log.debug("\tCmdHeader: \(binToHexRep(res))")
         return res
     }
     
     func buildD087(apdu : NFCISO7816APDU) throws -> [UInt8] {
         let cipher = [0x01] + self.padAndEncryptData(apdu)
         let res = try [0x87] + toAsn1Length(cipher.count) + cipher
-        Log.verbose("Build DO'87")
-        Log.verbose("\tDO87: \(binToHexRep(res))")
+        Log.debug("Build DO'87")
+        Log.debug("\tDO87: \(binToHexRep(res))")
         return res
     }
     
@@ -257,10 +257,10 @@ public class SecureMessaging {
             enc = AESEncrypt(key: self.ksenc, message: paddedData, iv: iv)
         }
         
-        Log.verbose("Pad data")
-        Log.verbose("\tData: \(binToHexRep(paddedData))")
-        Log.verbose("Encrypt data with KSenc")
-        Log.verbose("\tEncryptedData: \(binToHexRep(enc))")
+        Log.debug("Pad data")
+        Log.debug("\tData: \(binToHexRep(paddedData))")
+        Log.debug("Encrypt data with KSenc")
+        Log.debug("\tEncryptedData: \(binToHexRep(enc))")
         return enc
     }
     
@@ -274,8 +274,8 @@ public class SecureMessaging {
     
     func buildD08E(mac : [UInt8]) -> [UInt8] {
         let res : [UInt8] = [0x8E, UInt8(mac.count)] + mac
-        Log.verbose("Build DO'8E")
-        Log.verbose("\tDO8E: \(binToHexRep(res))" )
+        Log.debug("Build DO'8E")
+        Log.debug("\tDO8E: \(binToHexRep(res))" )
         return res
     }
 
@@ -287,8 +287,8 @@ public class SecureMessaging {
         }
         
         let res : [UInt8] = try [0x97] + toAsn1Length(binLe.count) + binLe
-        Log.verbose("Build DO'97")
-        Log.verbose("\tDO97: \(res)")
+        Log.debug("Build DO'97")
+        Log.debug("\tDO97: \(res)")
         return res
     }
     

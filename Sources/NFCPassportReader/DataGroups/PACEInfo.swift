@@ -67,7 +67,7 @@ public class PACEInfo : SecurityInfo {
         self.version = version
         self.parameterId = parameterId
 
-        Log.info("Found PACEInfo", metadata: [
+        Log.debug("Found PACEInfo", metadata: [
             "paceOid": "\(oid)",
             "paceVersion": "\(version)",
             "paceParameterId": "\(parameterId ?? -1)"
@@ -126,13 +126,13 @@ public class PACEInfo : SecurityInfo {
                 var dhKey : OpaquePointer? = nil
                 switch try getParameterSpec() {
                     case 0:
-                        Log.verbose( "Using DH_get_1024_160" )
+                        Log.debug( "Using DH_get_1024_160" )
                         dhKey = DH_get_1024_160()
                     case 1:
-                        Log.verbose( "Using DH_get_2048_224" )
+                        Log.debug( "Using DH_get_2048_224" )
                         dhKey = DH_get_2048_224()
                     case 2:
-                        Log.verbose( "Using DH_get_2048_256" )
+                        Log.debug( "Using DH_get_2048_256" )
                         dhKey = DH_get_2048_256()
                     default:
                         // Error

@@ -186,22 +186,22 @@ public func desMAC(key : [UInt8], msg : [UInt8]) -> [UInt8]{
     let size = msg.count / 8
     var y : [UInt8] = [0,0,0,0,0,0,0,0]
     
-    Log.verbose("Calc mac" )
+    Log.debug("Calc mac" )
     for i in 0 ..< size {
         let tmp = [UInt8](msg[i*8 ..< i*8+8])
-        Log.verbose("x\(i): \(binToHexRep(tmp))" )
+        Log.debug("x\(i): \(binToHexRep(tmp))" )
         y = DESEncrypt(key: [UInt8](key[0..<8]), message: tmp, iv: y)
-        Log.verbose("y\(i): \(binToHexRep(y))" )
+        Log.debug("y\(i): \(binToHexRep(y))" )
     }
     
-    Log.verbose("y: \(binToHexRep(y))" )
-    Log.verbose("bkey: \(binToHexRep([UInt8](key[8..<16])))" )
-    Log.verbose("akey: \(binToHexRep([UInt8](key[0..<8])))" )
+    Log.debug("y: \(binToHexRep(y))" )
+    Log.debug("bkey: \(binToHexRep([UInt8](key[8..<16])))" )
+    Log.debug("akey: \(binToHexRep([UInt8](key[0..<8])))" )
     let iv : [UInt8] = [0,0,0,0,0,0,0,0]
     let b = DESDecrypt(key: [UInt8](key[8..<16]), message: y, iv: iv, options:UInt32(kCCOptionECBMode))
-    Log.verbose( "b: \(binToHexRep(b))" )
+    Log.debug( "b: \(binToHexRep(b))" )
     let a = DESEncrypt(key: [UInt8](key[0..<8]), message: b, iv: iv, options:UInt32(kCCOptionECBMode))
-    Log.verbose( "a: \(binToHexRep(a))" )
+    Log.debug( "a: \(binToHexRep(a))" )
     
     return a
 }
