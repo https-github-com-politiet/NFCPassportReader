@@ -247,7 +247,7 @@ public class TagReader {
         // First select master file
         let cmd : NFCISO7816APDU = NFCISO7816APDU(instructionClass: 0x00, instructionCode: 0xA4, p1Parameter: 0x00, p2Parameter: 0x0C, data: Data(cmdData), expectedResponseLength: -1)
 
-        Log.info("Attempting to read CardAccess file using \(mode) mode")
+        Log.debug("Attempting to read CardAccess file using \(mode) mode")
 
         send(cmd: cmd) { [weak self] response, error in
             guard let sself = self else { return }
@@ -306,18 +306,18 @@ public class TagReader {
             expectedResponseLength: readAmount
         )
 
-        Log.verbose( "TagReader - data bytes remaining: \(leftToRead), will read : \(readAmount)" )
+        Log.debug( "TagReader - data bytes remaining: \(leftToRead), will read : \(readAmount)" )
         self.send( cmd: cmd ) { [weak self] (resp,err) in
             guard let sself = self else { return }
             guard let response = resp else {
                 completed( nil, err)
                 return
             }
-            Log.verbose( "TagReader - got resp - \(response)" )
+            Log.debug( "TagReader - got resp - \(response)" )
             sself.header += response.data
             
             let remaining = leftToRead - response.data.count
-            Log.verbose( "TagReader - Amount of data left to read - \(remaining)" )
+            Log.debug( "TagReader - Amount of data left to read - \(remaining)" )
             if remaining > 0 {
                 sself.readBinaryData(leftToRead: remaining, amountRead: amountRead + response.data.count, completed: completed )
             } else {
@@ -330,7 +330,7 @@ public class TagReader {
     
     func send( cmd: NFCISO7816APDU, completed: @escaping (ResponseAPDU?, NFCPassportReaderError?)->() ) {
         
-        Log.verbose( "TagReader - sending \(cmd)" )
+        Log.debug( "TagReader - sending \(cmd)" )
         var toSend = cmd
         if let sm = secureMessaging {
             do {
@@ -338,7 +338,7 @@ public class TagReader {
             } catch {
                 completed( nil, NFCPassportReaderError.UnableToProtectAPDU )
             }
-            Log.verbose("TagReader - [SM] \(toSend)" )
+            Log.debug("TagReader - [SM] \(toSend)" )
         }
 
         tag.sendCommand(apdu: toSend) { [unowned self] (data, sw1, sw2, error) in
@@ -347,19 +347,19 @@ public class TagReader {
                 Crashlytics.crashlytics().setCustomValue("TagReader - Error reading tag", forKey: FirebaseCustomKeys.errorInfo)
                 completed( nil, NFCPassportReaderError.ResponseError( error.localizedDescription, sw1, sw2 ) )
             } else {
-                Log.verbose( "TagReader - Received response" )
+                Log.debug( "TagReader - Received response" )
                 var rep = ResponseAPDU(data: [UInt8](data), sw1: sw1, sw2: sw2)
 
                 if let sm = self.secureMessaging {
                     do {
                         rep = try sm.unprotect(rapdu:rep)
-                        Log.verbose("\(String(format:"TagReader [SM - unprotected] \(binToHexRep(rep.data, asArray:true)), sw1:0x%02x sw2:0x%02x", rep.sw1, rep.sw2))")
+                        Log.debug("\(String(format:"TagReader [SM - unprotected] \(binToHexRep(rep.data, asArray:true)), sw1:0x%02x sw2:0x%02x", rep.sw1, rep.sw2))")
                     } catch {
                         completed( nil, NFCPassportReaderError.UnableToUnprotectAPDU )
                         return
                     }
                 } else {
-                    Log.verbose("\(String(format:"TagReader [unprotected] \(binToHexRep(rep.data, asArray:true)), sw1:0x%02x sw2:0x%02x", rep.sw1, rep.sw2))")
+                    Log.debug("\(String(format:"TagReader [unprotected] \(binToHexRep(rep.data, asArray:true)), sw1:0x%02x sw2:0x%02x", rep.sw1, rep.sw2))")
 
                 }
                 

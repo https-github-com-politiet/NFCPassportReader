@@ -7,79 +7,50 @@
 //
 
 import Foundation
-import Logging
+import FirebaseCrashlytics
 
 public struct Log {
-    private static var sharedInstance = Logger(label: "idk-ios-nfcreader")
+    private static let label = "idk-ios-nfcreader"
 
-    public static func setSharedInstance(logger: Logger) {
-        sharedInstance = logger
-    }
-
-    public static func setMetadata(_ metadata: Logger.Metadata) {
-        metadata.forEach { key, value in
-            sharedInstance[metadataKey: key] = value
+    static func debug(
+        _ message: String,
+        metadata: [String: String]? = nil,
+        file: String = #fileID,
+        function: String = #function,
+        line: UInt = #line
+    ) {
+        if Env.isDev || Env.isDebug {
+            print("DEBUG: \(label)/\(file):\(function)(line: \(line)): \(message), \(String(describing: metadata))")
         }
     }
 
-    static func verbose(
-        _ message: Logger.Message,
-        metadata: Logger.Metadata? = nil,
-        file: String = #fileID,
-        function: String = #function,
-        line: UInt = #line
-    ) {
-        sharedInstance.trace(message, metadata: metadata, file: file, function: function, line: line)
-    }
-
-    static func debug(
-        _ message: Logger.Message,
-        metadata: Logger.Metadata? = nil,
-        file: String = #fileID,
-        function: String = #function,
-        line: UInt = #line
-    ) {
-        sharedInstance.debug(message, metadata: metadata, file: file, function: function, line: line)
-    }
-
-    static func info(
-        _ message: Logger.Message,
-        metadata: Logger.Metadata? = nil,
-        file: String = #fileID,
-        function: String = #function,
-        line: UInt = #line
-    ) {
-        sharedInstance.info(message, metadata: metadata, file: file, function: function, line: line)
-    }
-
     static func warning(
-        _ message: Logger.Message,
-        metadata: Logger.Metadata? = nil,
+        _ message: String,
+        metadata: [String: String]? = nil,
         file: String = #fileID,
         function: String = #function,
         line: UInt = #line
     ) {
-        sharedInstance.warning(message, metadata: metadata, file: file, function: function, line: line)
+        Crashlytics.crashlytics().log("WARNING: \(label)/\(file):\(function)(line: \(line)): \(message), \(String(describing: metadata))")
     }
 
     static func error(
-        _ message: Logger.Message,
-        metadata: Logger.Metadata? = nil,
+        _ message: String,
+        metadata: [String: String]? = nil,
         file: String = #fileID,
         function: String = #function,
         line: UInt = #line
     ) {
-        sharedInstance.error(message, metadata: metadata, file: file, function: function, line: line)
+        Crashlytics.crashlytics().log("ERROR: \(label)/\(file):\(function)(line: \(line)): \(message), \(String(describing: metadata))")
     }
 
     static func error(
-        _ message: Logger.Message,
+        _ message: String,
         _ error: Error,
         file: String = #fileID,
         function: String = #function,
         line: UInt = #line
     ) {
-        let metadata: Logger.Metadata = ["error": "\(error)"]
-        sharedInstance.error(message, metadata: metadata, file: file, function: function, line: line)
+        Crashlytics.crashlytics().log("ERROR: \(label)/\(file):\(function)(line: \(line)): \(message), Error: \(error)")
     }
 }

@@ -335,7 +335,7 @@ public class NFCPassportModel {
             do {
                 self.trustChainBuiltWithoutTime = try validateAndExtractSigningCertificates(masterListURL: masterListURL, checkValidity: false)
             } catch let error {
-                Log.info("Failed to build trust chain without validity constraint", metadata: [
+                Log.debug("Failed to build trust chain without validity constraint", metadata: [
                     "reason": "\(error)"
                 ])
                 verificationErrors.append( error )
@@ -345,7 +345,7 @@ public class NFCPassportModel {
             do {
                 self.issuingCountryIsInML = try isIssuingCountryInMasterlist(masterListURL: masterListURL)
             } catch let error {
-                Log.info("Failed in isIssuingCountryInMasterlist", metadata: [
+                Log.debug("Failed in isIssuingCountryInMasterlist", metadata: [
                     "reason": "\(error)"
                 ])
                 verificationErrors.append(error)
@@ -355,7 +355,7 @@ public class NFCPassportModel {
             do {
                 self.passportCorrectlySigned = try validateAndExtractSigningCertificates(masterListURL: masterListURL, checkValidity: true)
             } catch let error {
-                Log.info("Failed to build trust chain with validity constraint", metadata: [
+                Log.debug("Failed to build trust chain with validity constraint", metadata: [
                     "reason": "\(error)"
                 ])
                 verificationErrors.append(error)
@@ -374,9 +374,9 @@ public class NFCPassportModel {
         self.activeAuthenticationChallenge = challenge
         self.activeAuthenticationSignature = signature
         
-        Log.verbose( "Active Authentication")
-        Log.verbose( "   challange - \(binToHexRep(challenge))")
-        Log.verbose( "   signature - \(binToHexRep(signature))")
+        Log.debug( "Active Authentication")
+        Log.debug( "   challange - \(binToHexRep(challenge))")
+        Log.debug( "   signature - \(binToHexRep(signature))")
 
         // Get AA Public key
         Crashlytics.crashlytics().setCustomValue("fail", forKey: FirebaseCustomKeys.activeAuthenticationStatus)
@@ -436,7 +436,7 @@ public class NFCPassportModel {
                 if msgHash == digest {
                     Crashlytics.crashlytics().setCustomValue("success", forKey: FirebaseCustomKeys.activeAuthenticationStatus)
                     self.activeAuthenticationStatus = .success
-                    Log.info( "Active Authentication (RSA) successful" )
+                    Log.debug( "Active Authentication (RSA) successful" )
                 } else {
                     Log.error( "Error verifying Active Authentication RSA signature - Hash doesn't match" )
                 }
@@ -458,7 +458,7 @@ public class NFCPassportModel {
             if OpenSSLUtils.verifyECDSASignature( publicKey:ecdsaPublicKey, signature: signature, data: challenge, digestType: digestType ) {
                 Crashlytics.crashlytics().setCustomValue("success", forKey: FirebaseCustomKeys.activeAuthenticationStatus)
                 self.activeAuthenticationStatus = .success
-                Log.info( "Active Authentication (ECDSA) successful" )
+                Log.debug( "Active Authentication (ECDSA) successful" )
             } else {
                 Log.error( "Error verifying Active Authentication ECDSA signature" )
             }
@@ -498,7 +498,7 @@ public class NFCPassportModel {
             throw error
         }
                 
-        Log.info( "Trust chain found from document signer cert to CSCA with checkValidity=\(checkValidity)" )
+        Log.debug( "Trust chain found from document signer cert to CSCA with checkValidity=\(checkValidity)" )
         return true
     }
 
@@ -519,7 +519,7 @@ public class NFCPassportModel {
         let result = countries.contains(isoCountry.alpha2.uppercased())
 
         Log.debug("Countries included in masterlist: \(countries)")
-        Log.info("\(isoCountry.alpha2.uppercased()) is \(result ? "" : "NOT") included in masterlist")
+        Log.debug("\(isoCountry.alpha2.uppercased()) is \(result ? "" : "NOT") included in masterlist")
 
         return result
 
@@ -536,7 +536,7 @@ public class NFCPassportModel {
         do {
             signedData = try OpenSSLUtils.verifyAndReturnSODEncapsulatedData(sod: sod)
             documentSigningCertificateVerified = true
-            Log.info("Verified document signing certificate using RFS5652 method")
+            Log.debug("Verified document signing certificate using RFS5652 method")
         } catch {
             Log.warning("Could not verify document signing certificate using RFS5652 method", metadata: [
                 "reason": "\(error)"
@@ -546,7 +546,7 @@ public class NFCPassportModel {
             do {
                 signedData = try OpenSSLUtils.verifyAndReturnSODEncapsulatedDataUsingCMS(sod: sod)
                 documentSigningCertificateVerified = true
-                Log.info("Verified document signing certificate using OpenSSL CMS method")
+                Log.debug("Verified document signing certificate using OpenSSL CMS method")
             } catch {
                 Log.error("Could not verify document signing certificate using OpenSSL CMS method", error)
                 signedData = try sod.getEncapsulatedContent()

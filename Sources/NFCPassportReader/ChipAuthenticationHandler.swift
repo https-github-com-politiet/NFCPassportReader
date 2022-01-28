@@ -54,7 +54,7 @@ class ChipAuthenticationHandler {
         
         self.completedHandler = completed
         
-        Log.info("Performing Chip Authentication - number of public keys found - \(chipAuthPublicKeyInfos.count)")
+        Log.debug("Performing Chip Authentication - number of public keys found - \(chipAuthPublicKeyInfos.count)")
         guard isChipAuthenticationSupported else {
             Crashlytics.crashlytics().setCustomValue("not supported", forKey: FirebaseCustomKeys.chipAuthenticationStatus)
             completed( false )
@@ -101,11 +101,11 @@ class ChipAuthenticationHandler {
         }
         
         do {
-            Log.info("Starting Chip Authentication!")
+            Log.debug("Starting Chip Authentication!")
             // For each public key, do chipauth
             try self.doCA( keyId: keyId, encryptionDetailsOID: chipAuthInfoOID, publicKey: chipAuthPublicKeyInfo.pubKey, completed: { [unowned self] (success) in
                 
-                Log.info("Finished Chip Authentication", metadata: ["result": "\(success)"])
+                Log.debug("Finished Chip Authentication", metadata: ["result": "\(success)"])
                 if !success {
                     self.doChipAuthenticationForNextPublicKey()
                 } else {
@@ -235,11 +235,11 @@ class ChipAuthenticationHandler {
         
         let ssc = withUnsafeBytes(of: 0.bigEndian, Array.init)
         if (cipherAlg.hasPrefix("DESede")) {
-            Log.info("Restarting secure messaging using DESede encryption")
+            Log.debug("Restarting secure messaging using DESede encryption")
             let sm = SecureMessaging(encryptionAlgorithm: .DES, ksenc: ksEnc, ksmac: ksMac, ssc: ssc)
             tagReader?.secureMessaging = sm
         } else if (cipherAlg.hasPrefix("AES")) {
-            Log.info("Restarting secure messaging using AES encryption")
+            Log.debug("Restarting secure messaging using AES encryption")
             let sm = SecureMessaging(encryptionAlgorithm: .AES, ksenc: ksEnc, ksmac: ksMac, ssc: ssc)
             tagReader?.secureMessaging = sm
         } else {

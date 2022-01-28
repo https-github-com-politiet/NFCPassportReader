@@ -605,7 +605,7 @@ public class OpenSSLUtils {
         CMAC_Update(ctx, message, message.count);
         CMAC_Final(ctx, &mac, &maclen);
         
-        Log.verbose( "aesMac - mac - \(binToHexRep(mac))" )
+        Log.debug( "aesMac - mac - \(binToHexRep(mac))" )
         
         return [UInt8](mac[0..<maclen])
     }
@@ -729,7 +729,7 @@ public class OpenSSLUtils {
             secret = [UInt8](repeating: 0, count: Int(DH_size(dh)))
             let len = DH_compute_key(&secret, bn, dh);
             
-            Log.verbose( "OpenSSLUtils.computeSharedSecret - DH secret len - \(len)" )
+            Log.debug( "OpenSSLUtils.computeSharedSecret - DH secret len - \(len)" )
         } else {
             let ctx = EVP_PKEY_CTX_new(privateKeyPair, nil)
             defer{ EVP_PKEY_CTX_free(ctx) }
