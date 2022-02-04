@@ -76,14 +76,14 @@ class ChipAuthenticationHandler {
         // So if we do have a ChipAuthInfo the we take the keyId (if present) and OID from there,
         // BUT if we don't then we will try to infer the OID from the public key
         let chipAuthPublicKeyInfo = chipAuthPublicKeyInfos.removeFirst()
-        let keyId = chipAuthPublicKeyInfo.getKeyId()
+        let keyId = chipAuthPublicKeyInfo.keyId
         Crashlytics.crashlytics().setCustomKeysAndValues([
             FirebaseCustomKeys.chipAuthenticationPublicKeyInfoOID: chipAuthPublicKeyInfo.getObjectIdentifier(),
-            FirebaseCustomKeys.chipAuthenticationPublicKeyInfoKeyID: keyId
+            FirebaseCustomKeys.chipAuthenticationPublicKeyInfoKeyID: keyId ?? 0
         ])
 
         let chipAuthInfoOID : String
-        if let chipAuthInfo = chipAuthInfos[keyId] {
+        if let chipAuthInfo = chipAuthInfos[keyId ?? 0] {
             chipAuthInfoOID = chipAuthInfo.oid
             Crashlytics.crashlytics().setCustomKeysAndValues([
                 FirebaseCustomKeys.chipAuthenticationInfoKeyID: chipAuthInfo.getKeyId(),

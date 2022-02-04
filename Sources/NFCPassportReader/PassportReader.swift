@@ -304,7 +304,7 @@ extension PassportReader {
                 self?.startReadingDataGroups()
             } else if let error = error {
                 Log.error("BAC Failed", error)
-                    Crashlytics.crashlytics().setCustomValue("fail", forKey: FirebaseCustomKeys.BACStatus)
+                Crashlytics.crashlytics().setCustomValue("fail", forKey: FirebaseCustomKeys.BACStatus)
                 self?.passport.BACStatus = .failed
                 let displayMessage = NFCViewDisplayMessage.error(error)
                 self?.invalidateSession(errorMessage: displayMessage, error: error)
@@ -363,7 +363,7 @@ extension PassportReader {
         }
 
         guard self.passport.chipAuthenticationStatus != .success else {
-                Crashlytics.crashlytics().setCustomValue("success", forKey: FirebaseCustomKeys.activeAuthenticationStatus)
+            Crashlytics.crashlytics().setCustomValue("success", forKey: FirebaseCustomKeys.activeAuthenticationStatus)
             completed()
             return
         }
