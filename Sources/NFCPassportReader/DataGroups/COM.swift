@@ -14,13 +14,7 @@ public class COM : DataGroup {
     public private(set) var dataGroupsPresent : [String] = []
     
     required init( _ data : [UInt8] ) throws {
-        do {
-            try super.init(data)
-        } catch {
-            Crashlytics.crashlytics().setCustomValue("Error parsing COM", forKey: FirebaseCustomKeys.errorInfo)
-            throw NFCPassportReaderError.InvalidResponse
-        }
-        
+        try super.init(data)
         datagroupType = .COM
     }
     

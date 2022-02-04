@@ -21,12 +21,7 @@ public class DataGroup12 : DataGroup {
     public private(set) var personalizationDeviceSerialNr : String?
 
     required init( _ data : [UInt8] ) throws {
-        do {
-            try super.init(data)
-        } catch {
-            Crashlytics.crashlytics().setCustomValue("Error parsing DG12", forKey: FirebaseCustomKeys.errorInfo)
-            throw NFCPassportReaderError.InvalidResponse
-        }
+        try super.init(data)
         datagroupType = .DG12
     }
 
