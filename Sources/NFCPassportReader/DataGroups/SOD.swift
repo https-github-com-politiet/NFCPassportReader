@@ -242,4 +242,40 @@ class SOD : DataGroup {
 
         return signatureAlgoString
     }
+    
+    
+    /// Gets the hash algorithm for verification, depends on signing algorithm
+    /// - Returns: the hash algorithm used
+    /// - Throws: Error if we can't find or read the hash algorithm
+    func specifyHashAlgorithm(signatureAlgorithm: String ) throws -> String {
+        
+        var signatureAlgWithHash = signatureAlgorithm
+        
+        if !signatureAlgorithm.containsHashAlgorithm() {
+            guard let signedData = asn1.getChild(1)?.getChild(0) else {
+                throw OpenSSLError.UnableToExtractSignedDataFromPKCS7("specifyHashAlgorithm - Data in invalid format")
+            }
+            
+            if signatureAlgWithHash == "rsaEncryption" {
+            guard let digestAlgorithm = signedData.getChild(1)?.getChild(0)?.getChild(0) else {
+                    throw OpenSSLError.UnableToExtractSignedDataFromPKCS7(
+                        "specifyHashAlgorithm - digestAlgorithm data in invalid format"
+                    )
+                }
+                signatureAlgWithHash += digestAlgorithm.value
+            } else {
+                guard let signerInfo = signedData.getChild(4),
+                      let signatureParams = signerInfo.getChild(0)?.getChild(4)?.getChild(1),
+                      let signatureParamsHash = signatureParams.getChild(0)?.getChild(0)?.getChild(0) else {
+                    throw OpenSSLError.UnableToExtractSignedDataFromPKCS7(
+                        "specifyHashAlgorithm - signatureParams data in invalid format"
+                    )
+                }
+                signatureAlgWithHash += signatureParamsHash.value
+            }
+        }
+        
+        Log.debug("SOD Signature with Hssh Algorithm: \(signatureAlgWithHash)")
+        return signatureAlgWithHash
+    }
 }
