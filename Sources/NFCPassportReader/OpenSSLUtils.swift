@@ -301,14 +301,11 @@ public class OpenSSLUtils {
         // Make sure that hash equals the messageDigest
         if messageDigest != mdHash {
             // Invalid - signed data hash doesn't match message digest hash
-            throw OpenSSLError.VerifyAndReturnSODEncapsulatedData("messageDigest Hash doesn't hatch that of the signed attributes")
+            throw OpenSSLError.VerifyAndReturnSODEncapsulatedData("messageDigest Hash doesn't match that of the signed attributes")
         }
 
         var digestType = sigType
-        // Need to specify hash algorithm for documents with rsassapss signature algorithm
-        if sigType.lowercased() == "rsassapss" {
-            digestType = sigType + signedAttribsHashAlgo
-        }
+        digestType = try sod.specifyHashAlgorithm(signatureAlgorithm: sigType)
 
         var result = false
 
@@ -318,9 +315,34 @@ public class OpenSSLUtils {
                                  pubKey: pubKey,
                                  digestType: digestType)
 
-        // Fallback for failing rsassapss signature algorithms (sha1 is default for rsassapss)
-        if (!result && sigType.lowercased() == "rsassapss") {
-            digestType = sigType + "sha1"
+        
+        // Fallback for failing signature algorithms
+        if (!result && !sigType.containsHashAlgorithm()) {
+            digestType = sigType + "sha256"
+            result = verifySignature(data: [UInt8](signedAttributes),
+                                     signature: [UInt8](signature),
+                                     pubKey: pubKey,
+                                     digestType: digestType)
+        }
+        
+        if (!result && !sigType.containsHashAlgorithm()) {
+            digestType = sigType + "sha152"
+            result = verifySignature(data: [UInt8](signedAttributes),
+                                     signature: [UInt8](signature),
+                                     pubKey: pubKey,
+                                     digestType: digestType)
+        }
+        
+        if (!result && !sigType.containsHashAlgorithm()) {
+            digestType = sigType + "sha1" // (sha1 is default for rsassapss)
+            result = verifySignature(data: [UInt8](signedAttributes),
+                                     signature: [UInt8](signature),
+                                     pubKey: pubKey,
+                                     digestType: digestType)
+        }
+        
+        if (!result && !sigType.containsHashAlgorithm()) {
+            digestType = sigType + "sha224"
             result = verifySignature(data: [UInt8](signedAttributes),
                                      signature: [UInt8](signature),
                                      pubKey: pubKey,
