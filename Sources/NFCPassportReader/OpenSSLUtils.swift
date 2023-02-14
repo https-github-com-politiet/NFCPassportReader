@@ -326,7 +326,7 @@ public class OpenSSLUtils {
         }
         
         if (!result && !sigType.containsHashAlgorithm()) {
-            digestType = sigType + "sha152"
+            digestType = sigType + "sha512"
             result = verifySignature(data: [UInt8](signedAttributes),
                                      signature: [UInt8](signature),
                                      pubKey: pubKey,
