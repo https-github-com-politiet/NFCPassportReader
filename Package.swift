@@ -18,7 +18,7 @@ let package = Package(
         .package(url: "https://github.com/krzyzanowskim/OpenSSL.git", .upToNextMinor(from: "1.1.1900")),
         .package(name: "Firebase",
                  url: "https://github.com/firebase/firebase-ios-sdk.git",
-                 from: "8.0.0"),
+                 from: "10.0.0"),
 
     ],
     targets: [
